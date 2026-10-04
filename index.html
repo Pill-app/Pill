@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Pill</title>
+  <style>
+    /* Pill : Liquid Glass. Verre givré, filets de lumière, typographie SF légère. */
+    :root {
+      --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+      --ink: 255, 255, 255;
+      --bg1: 66, 68, 78;
+      --bg2: 12, 12, 16;
+      --accent: 255, 255, 255;
+      --on-accent: #0b0b0e;
+      --op: 0.7;
+      --text: rgba(255, 255, 255, 0.96);
+      --muted: rgba(235, 235, 245, 0.52);
+      --line: rgba(255, 255, 255, 0.10);
+      --fill: rgba(255, 255, 255, 0.06);
+      --fill-hover: rgba(255, 255, 255, 0.11);
+      --fill-strong: rgba(255, 255, 255, 0.18);
+      --copied-bg: rgba(255, 255, 255, 0.94);
+      --copied-fg: #0b0b0e;
+      --chip-bg: rgba(20, 20, 26, 0.55);
+      --chip-bg-hover: rgba(20, 20, 26, 0.85);
+      --chip-fg: rgba(255, 255, 255, 0.95);
+      --ease: cubic-bezier(0.32, 0.72, 0, 1);
+      color-scheme: dark;
+    }
+    :root[data-theme="minuit"] { --bg1: 46, 60, 96;  --bg2: 7, 11, 24;  --accent: 168, 200, 255; }
+    :root[data-theme="violet"] { --bg1: 74, 60, 108; --bg2: 13, 9, 26;  --accent: 200, 182, 255; }
+    :root[data-theme="ambre"]  { --bg1: 96, 74, 46;  --bg2: 21, 14, 7;  --accent: 242, 204, 146; }
+    :root[data-theme="foret"]  { --bg1: 46, 72, 62;  --bg2: 7, 15, 12;  --accent: 164, 218, 194; }
+    :root[data-theme="clair"] {
+      --ink: 0, 0, 0; --bg1: 255, 255, 255; --bg2: 236, 236, 242; --accent: 0, 102, 214; --on-accent: #fff;
+      --text: rgba(20, 20, 26, 0.94); --muted: rgba(60, 60, 67, 0.55); --line: rgba(0, 0, 0, 0.09);
+      --fill: rgba(0, 0, 0, 0.045); --fill-hover: rgba(0, 0, 0, 0.08); --fill-strong: rgba(0, 0, 0, 0.14);
+      --copied-bg: rgba(20, 20, 26, 0.92); --copied-fg: #fff;
+      --chip-bg: rgba(255, 255, 255, 0.8); --chip-bg-hover: #fff; --chip-fg: rgba(20, 20, 26, 0.9);
+      color-scheme: light;
+    }
+    html, body {
+      margin: 0; height: 100%; background: transparent; overflow: hidden;
+      font-family: var(--sans); -webkit-font-smoothing: antialiased; user-select: none; letter-spacing: 0.012em;
+    }
+    button { font-family: var(--sans); }
+
+    /* La capsule : verre teinté, arête lumineuse, reflet spéculaire */
+    #pill {
+      box-sizing: border-box; width: 100%; height: 100%; position: relative;
+      background: linear-gradient(165deg, rgba(var(--bg1), calc(var(--op) - 0.06)) 0%, rgba(var(--bg2), var(--op)) 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.30),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+        inset 0 0 28px rgba(255, 255, 255, 0.045);
+      color: var(--text); border-radius: 32px; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    #pill::before {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+      background:
+        radial-gradient(90% 40% at 30% -8%, rgba(255, 255, 255, 0.20), transparent 70%),
+        linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.05) 48%, transparent 58%);
+    }
+    #pill::after {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; padding: 1px;
+      background: linear-gradient(140deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.05) 32%, rgba(255, 255, 255, 0.02) 62%, rgba(255, 255, 255, 0.26));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+    }
+    :root[data-theme="clair"] #pill::after {
+      background: linear-gradient(140deg, rgba(255, 255, 255, 1), rgba(0, 0, 0, 0.06) 40%, rgba(0, 0, 0, 0.04) 65%, rgba(255, 255, 255, 0.9));
+    }
+
+    #top { position: relative; flex: 0 0 54px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+    #left { display: flex; align-items: center; }
+    #clock {
+      display: flex; align-items: center;
+      font-family: var(--display); font-size: 31px; font-weight: 200; letter-spacing: 0.025em;
+      font-feature-settings: "tnum";
+    }
+    .slot { display: inline-block; width: var(--digit-w, 0.45em); height: 1em; line-height: 1em; overflow: hidden; }
+    .strip { display: flex; flex-direction: column; }
+    .ready .strip { transition: transform 0.55s var(--ease); }
+    .strip span { height: 1em; line-height: 1em; text-align: center; }
+    .colon { line-height: 1em; margin: 0 1px; opacity: 0.3; font-weight: 200; }
+
+    #logo { display: block; flex: 0 0 auto; overflow: visible; }
+    .eye { transform-box: fill-box; transform-origin: center; animation: blink 6s infinite; }
+    @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.12); } }
+    #pill.paused .eye { animation: none; transform: scaleY(0.2); opacity: 0.6; transition: transform 0.25s, opacity 0.25s; }
+    @media (prefers-reduced-motion: reduce) { .eye { animation: none; } }
+
+    #close {
+      flex: 0 0 auto; margin-left: 8px; width: 16px; height: 16px; border: none; border-radius: 50%;
+      background: var(--fill-hover); color: var(--text); font-size: 8px; line-height: 16px; padding: 0;
+      cursor: pointer; opacity: 0; transition: opacity 0.25s, background 0.25s;
+    }
+    #close:hover { background: var(--fill-strong); }
+    #pill:hover #close { opacity: 1; }
+
+    /* Champs : verre creusé */
+    #searchwrap {
+      flex: 0 0 auto; padding: 0 14px 10px; display: flex; gap: 8px; align-items: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    #pill.open #searchwrap { opacity: 1; pointer-events: auto; transition-delay: 0.1s; }
+    #search, .field {
+      box-sizing: border-box; border: none; outline: none; color: var(--text);
+      background: rgba(var(--ink), 0.07);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18), inset 0 0 0 1px var(--line);
+      font: 13px var(--sans); letter-spacing: 0.012em; user-select: text; caret-color: rgb(var(--accent));
+      transition: background 0.25s, box-shadow 0.25s;
+    }
+    #search { flex: 1; min-width: 0; height: 36px; padding: 0 16px; border-radius: 999px; }
+    .field { height: 32px; padding: 0 12px; border-radius: 12px; }
+    #search::placeholder, .field::placeholder { color: var(--muted); font-family: var(--sans); font-size: 13px; letter-spacing: 0.012em; }
+    #search:focus, .field:focus { background: rgba(var(--ink), 0.10); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(var(--accent), 0.5); }
+    textarea.field { width: 100%; height: auto; min-height: 68px; padding: 10px 12px; resize: none; line-height: 1.45; }
+    input.num { width: 56px; text-align: center; padding: 0 4px; }
+
+    #list { flex: 1; overflow-y: auto; padding: 2px 14px 8px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    #pill.open #list { opacity: 1; pointer-events: auto; transition-delay: 0.1s; }
+    #list::-webkit-scrollbar, .scroll::-webkit-scrollbar, #lres::-webkit-scrollbar { width: 6px; }
+    #list::-webkit-scrollbar-thumb, .scroll::-webkit-scrollbar-thumb, #lres::-webkit-scrollbar-thumb { background: rgba(var(--ink), 0.14); border-radius: 3px; }
+
+    .item {
+      position: relative; background: var(--fill); border-radius: 18px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 0 0 1px rgba(var(--ink), 0.04);
+      padding: 11px 14px; margin-bottom: 6px; font-size: 12.5px; line-height: 1.45; letter-spacing: 0.012em; cursor: pointer;
+      transition: background 0.25s, box-shadow 0.25s;
+    }
+    .item:hover { background: var(--fill-hover); }
+    #list.nav .item.sel { background: var(--fill-hover); box-shadow: inset 0 0 0 1px var(--fill-strong); }
+    .item.copied { background: var(--copied-bg); color: var(--copied-fg); }
+    .item .body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; word-break: break-word; }
+    .item img { display: block; max-width: 100%; max-height: 90px; border-radius: 10px; }
+    .item.pinned { background: rgba(var(--accent), 0.13); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), inset 0 0 0 1px rgba(var(--accent), 0.16); }
+    .item.after-pinned { margin-top: 16px; }
+
+    .acts { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
+    .acts button {
+      width: 22px; height: 22px; border: none; border-radius: 50%; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--chip-bg); color: var(--chip-fg); font-size: 9px;
+      box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
+      cursor: pointer; opacity: 0; transition: opacity 0.2s, background 0.2s;
+    }
+    .acts button:hover { background: var(--chip-bg-hover); }
+    .acts svg { width: 10px; height: 10px; fill: currentColor; }
+    .item:hover .acts button { opacity: 1; }
+    .item.pinned .acts .pin { opacity: 0.85; }
+    .empty { color: var(--muted); font: 300 15px var(--display); letter-spacing: 0; text-align: center; margin-top: 32px; }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+    #list.enter .item { animation: rise 0.5s var(--ease) both; animation-delay: calc(var(--i, 0) * 28ms); }
+    @media (prefers-reduced-motion: reduce) { #list.enter .item { animation: none; } }
+
+    /* Barre d'actions : texte seul, sans cadre */
+    #bar { flex: 0 0 auto; display: flex; gap: 2px; padding: 6px 14px 14px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    #pill.open #bar { opacity: 1; pointer-events: auto; transition-delay: 0.1s; }
+    #bar button {
+      flex: 1; padding: 8px 0; border-radius: 999px; border: none; background: transparent; color: var(--muted);
+      font: 500 12px var(--sans); letter-spacing: 0.012em; cursor: pointer; transition: background 0.25s, color 0.25s;
+    }
+    #bar button:hover { background: var(--fill); color: var(--text); }
+    #bar button.on { background: var(--fill-hover); color: var(--text); }
+    #bar button[hidden] { display: none; }
+
+    #gear {
+      flex: 0 0 auto; width: 36px; height: 36px; padding: 0; border-radius: 50%; border: none;
+      background: rgba(var(--ink), 0.07); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+      color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: background 0.25s, color 0.25s;
+    }
+    #gear:hover { background: var(--fill-hover); color: var(--text); }
+    #pill.styling #gear { background: rgb(var(--accent)); color: var(--on-accent); }
+    #gear svg { width: 16px; height: 16px; }
+
+    /* Style */
+    #settings { flex: 1; overflow-y: auto; padding: 4px 18px 8px; display: none; }
+    #pill.open.styling #settings { display: block; }
+    #pill.styling #list { display: none; }
+    .sect { display: flex; justify-content: space-between; margin: 14px 0 10px; font: 500 12px var(--sans); letter-spacing: 0.012em; color: var(--muted); }
+    #themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 10px; }
+    .sw { border: none; background: none; padding: 0; cursor: pointer; color: var(--muted); font: 500 11.5px var(--sans); display: flex; flex-direction: column; align-items: center; gap: 7px; }
+    .sw i {
+      display: block; width: 100%; height: 40px; border-radius: 16px; box-sizing: border-box;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+      transition: box-shadow 0.25s;
+    }
+    .sw:hover, .sw.on { color: var(--text); }
+    .sw.on i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 1.5px rgb(var(--accent)); }
+    #settings input[type=range] { width: 100%; margin: 0 0 4px; accent-color: rgb(var(--accent)); }
+    #reset { width: 100%; margin-top: 18px; padding: 9px 0; border-radius: 999px; border: none; background: var(--fill); color: var(--muted); font: 500 12px var(--sans); cursor: pointer; transition: background 0.25s, color 0.25s; }
+    #reset:hover { background: var(--fill-hover); color: var(--text); }
+
+    /* Onglets : segment de verre, l'actif est un galet lumineux */
+    .view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+    .view.active { display: flex; }
+    .view.pane { box-sizing: border-box; padding: 0 14px 14px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    #pill.open .view.pane { opacity: 1; pointer-events: auto; transition-delay: 0.1s; }
+    #tabs, .seg {
+      display: flex; gap: 2px; padding: 3px; border-radius: 999px;
+      background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(var(--ink), 0.05);
+    }
+    :root[data-theme="clair"] #tabs, :root[data-theme="clair"] .seg { background: rgba(0, 0, 0, 0.05); }
+    #tabs { flex: 0 0 auto; margin: 0 14px 10px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    #pill.open #tabs { opacity: 1; pointer-events: auto; transition-delay: 0.1s; }
+    .seg { margin-bottom: 14px; }
+    #tabs button, .seg button {
+      flex: 1; padding: 6px 0; border-radius: 999px; border: none; background: transparent; color: var(--muted);
+      font: 500 12px var(--sans); letter-spacing: 0.012em; cursor: pointer; transition: background 0.3s var(--ease), color 0.3s, box-shadow 0.3s;
+    }
+    #tabs button:hover, .seg button:hover { color: var(--text); }
+    #tabs button.on, .seg button.on {
+      background: rgba(var(--ink), 0.16); color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 1px 3px rgba(0, 0, 0, 0.28);
+    }
+    :root[data-theme="clair"] #tabs button.on, :root[data-theme="clair"] .seg button.on { background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+
+    /* Boutons : le primaire est une perle claire */
+    .btn {
+      flex: 1; padding: 9px 0; border-radius: 999px; border: none; background: var(--fill-hover); color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      font: 500 13px var(--sans); letter-spacing: 0.012em; cursor: pointer; transition: background 0.25s, transform 0.15s;
+    }
+    .btn:hover { background: var(--fill-strong); }
+    .btn:active { transform: scale(0.97); }
+    .btn.primary { background: rgb(var(--accent)); color: var(--on-accent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 10px rgba(var(--accent), 0.22); }
+    .btn.primary:hover { background: rgba(var(--accent), 0.88); }
+    .row { display: flex; gap: 8px; margin-top: 14px; align-items: center; justify-content: center; }
+    .scroll { flex: 1; min-height: 0; overflow-y: auto; }
+    .x { opacity: 0; border: none; background: none; color: var(--muted); cursor: pointer; font-size: 11px; padding: 2px 4px; transition: opacity 0.2s, color 0.2s; }
+    .x:hover { color: var(--text); }
+    .foot { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 8px 4px 0; color: var(--muted); font-size: 12px; }
+    .foot button { border: none; background: none; color: var(--muted); font: 500 12px var(--sans); cursor: pointer; transition: color 0.2s; }
+    .foot button:hover { color: var(--text); }
+
+    /* Minuteur dans la capsule réduite */
+    #tdisp { display: none; align-items: center; gap: 10px; font-family: var(--display); font-weight: 200; font-size: 31px; letter-spacing: 0.025em; font-feature-settings: "tnum"; }
+    #tdisp small { font: 500 12px var(--sans); letter-spacing: 0; color: rgb(var(--accent)); }
+    #pill.timing #clock { display: none; }
+    #pill.timing #tdisp { display: flex; }
+    #pill.alarm #top { animation: alarm 0.8s ease-in-out infinite alternate; }
+    @keyframes alarm { from { background: transparent; } to { background: rgba(var(--accent), 0.28); } }
+
+    /* Temps */
+    .tmode { display: none; }
+    .tmode.on { display: block; }
+    .bigtime { font: 200 64px/1 var(--display); text-align: center; letter-spacing: 0.025em; margin: 14px 0 8px; font-feature-settings: "tnum"; }
+    .phase { text-align: center; margin-top: 8px; font: 500 12px var(--sans); letter-spacing: 0; color: rgb(var(--accent)); }
+    .chips { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+    .chip { padding: 5px 12px; border-radius: 999px; border: none; background: var(--fill); color: var(--muted); font: 500 12px var(--sans); cursor: pointer; transition: background 0.25s, color 0.25s; }
+    .chip:hover { color: var(--text); background: var(--fill-hover); }
+    .chip.on { background: rgb(var(--accent)); color: var(--on-accent); }
+    .unit { color: var(--muted); font: 500 12px var(--sans); }
+    .dots { display: flex; gap: 8px; justify-content: center; margin: 10px 0 2px; }
+    .dots i { width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--muted); box-sizing: border-box; }
+    .dots i.done { background: rgb(var(--accent)); border-color: transparent; }
+    .dots i.cur { border-color: rgb(var(--accent)); }
+    .cfg { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 20px; }
+    .stat { text-align: center; margin-top: 14px; color: var(--muted); font-size: 12px; }
+    #laps { margin-top: 12px; max-height: 140px; overflow-y: auto; font-size: 12.5px; }
+    .lap { display: flex; justify-content: space-between; padding: 7px 14px; border-radius: 12px; background: var(--fill); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+
+    /* Notes et tâches */
+    .sp { display: none; flex: 1; min-height: 0; flex-direction: column; }
+    .sp.on { display: flex; }
+    .addrow { display: flex; gap: 6px; margin-bottom: 10px; }
+    .addrow .field { flex: 1; min-width: 0; }
+    .addrow input[type=date] { flex: none; width: 118px; padding: 0 8px; font-size: 12px; }
+    .todo { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 16px; background: var(--fill); margin-bottom: 5px; font-size: 12.5px; line-height: 1.4; }
+    .todo .ck {
+      flex: 0 0 18px; width: 18px; height: 18px; padding: 0; border-radius: 50%; cursor: pointer;
+      border: 1.5px solid var(--muted); background: transparent; color: transparent; font-size: 10px;
+      display: flex; align-items: center; justify-content: center; transition: background 0.25s, border-color 0.25s;
+    }
+    .todo.done .ck { background: rgb(var(--accent)); border-color: transparent; color: var(--on-accent); }
+    .todo .tx { flex: 1; min-width: 0; word-break: break-word; }
+    .todo.done .tx { text-decoration: line-through; color: var(--muted); }
+    .due { white-space: nowrap; font: 500 11px var(--sans); color: var(--muted); }
+    .due.late { color: #ff8a80; }
+    .todo:hover .x, .note:hover .x { opacity: 1; }
+    .note { position: relative; padding: 11px 14px; border-radius: 18px; background: var(--fill); margin-bottom: 6px; font-size: 12.5px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; cursor: text; }
+    .note small { display: block; margin-top: 5px; color: var(--muted); font-size: 10.5px; }
+    .note .x { position: absolute; top: 8px; right: 8px; }
+
+    /* Système */
+    .card { padding: 14px 16px; border-radius: 20px; background: var(--fill); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(var(--ink), 0.04); margin-bottom: 8px; }
+    .card h4 { margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; font: 500 12px var(--sans); color: var(--muted); }
+    .card h4 b { color: var(--text); font: 200 22px var(--display); letter-spacing: 0.025em; }
+    .meter { height: 4px; border-radius: 2px; background: rgba(var(--ink), 0.12); overflow: hidden; }
+    .meter i { display: block; height: 100%; width: 0; border-radius: 2px; background: rgb(var(--accent)); transition: width 0.7s var(--ease); }
+    .meter i.low { background: #ff8a80; }
+    .card .sub { margin-top: 8px; color: var(--muted); font-size: 11.5px; }
+    .spark { display: block; width: 100%; height: 34px; margin-top: 10px; }
+    .spark polyline { fill: none; stroke: rgb(var(--accent)); stroke-width: 1.25; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+
+    /* Lanceur */
+    #lq { width: 100%; height: 38px; border-radius: 999px; padding: 0 18px; font-size: 14px; }
+    #lq::placeholder { font-size: 14px; }
+    #lres { flex: 1; min-height: 0; overflow-y: auto; margin-top: 10px; }
+    .lrow { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 16px; cursor: pointer; margin-bottom: 2px; transition: background 0.2s; }
+    .lrow.sel { background: var(--fill-hover); }
+    .lrow img { width: 26px; height: 26px; flex: none; }
+    .lrow .gl { width: 26px; height: 26px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--fill-hover); color: var(--muted); font-size: 13px; }
+    .lrow .tx { min-width: 0; flex: 1; }
+    .lrow .nm, .lrow .sb { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lrow .nm { font-size: 13px; font-weight: 500; letter-spacing: 0.012em; }
+    .lrow .sb { font-size: 11px; color: var(--muted); }
+    .lhint { color: var(--muted); font-size: 11px; text-align: center; padding-top: 8px; }
+
+    /* Détection du contenu : étiquette discrète + action adaptée */
+    .tag { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; font: 500 10.5px var(--sans); color: var(--muted); }
+    .tag svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .tag .dot { width: 11px; height: 11px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+    .item.copied .tag { color: inherit; opacity: 0.6; }
+    .item .res { margin-top: 3px; font: 200 22px var(--display); letter-spacing: 0.025em; }
+    .item .body.mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; }
+    .acts .go { font-size: 11px; }
+
+    /* Calculatrice */
+    #tabs button { font-size: 11.5px; }
+    #c-screen { flex: 0 0 auto; padding: 6px 8px 14px; text-align: right; min-height: 84px; display: flex; flex-direction: column; justify-content: flex-end; }
+    #c-expr { font: 200 44px/1.1 var(--display); letter-spacing: 0.025em; font-feature-settings: "tnum"; word-break: break-all; }
+    #c-expr.long { font-size: 28px; }
+    #c-res { align-self: flex-end; min-height: 20px; margin-top: 4px; padding: 0; border: none; background: none; color: var(--muted); font: 500 14px var(--sans); cursor: pointer; transition: color 0.2s; }
+    #c-res:hover { color: var(--text); }
+    #c-keys { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; gap: 8px; }
+    .key {
+      border: none; border-radius: 999px; padding: 0; background: var(--fill-hover); color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14); font: 300 21px var(--display); cursor: pointer;
+      transition: background 0.2s, transform 0.12s;
+    }
+    .key:hover { background: var(--fill-strong); }
+    .key:active { transform: scale(0.94); }
+    .key.fn { background: var(--fill); color: var(--muted); font-size: 17px; }
+    .key.fn:hover { background: var(--fill-hover); color: var(--text); }
+    .key.op { background: rgba(var(--accent), 0.2); font-size: 24px; }
+    .key.op:hover { background: rgba(var(--accent), 0.32); }
+    .key.eq { background: rgb(var(--accent)); color: var(--on-accent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 10px rgba(var(--accent), 0.25); }
+    .key.eq:hover { background: rgba(var(--accent), 0.88); }
+
+    /* Goutte de verre qui glisse sous l'onglet actif */
+    #tabs, .seg { position: relative; }
+    #tabs button, .seg button {
+      position: relative; z-index: 1;
+      transition: color 0.3s, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #tabs button.on, .seg button.on,
+    :root[data-theme="clair"] #tabs button.on, :root[data-theme="clair"] .seg button.on {
+      background: transparent; box-shadow: none; color: var(--text);
+    }
+    #tabs button.on { transform: scale(1.09); }
+    .seg button.on { transform: scale(1.06); }
+    .glider {
+      position: absolute; top: -3px; bottom: -3px; left: 0; width: 0; z-index: 0; pointer-events: none;
+      border-radius: 999px; will-change: transform, width;
+      transition: transform 1s cubic-bezier(0.3, 1.18, 0.4, 1), width 1s cubic-bezier(0.3, 1.18, 0.4, 1);
+    }
+    /* Goutte : verre presque transparent, bord lumineux fin, lumière douce qui traverse */
+    .glider i {
+      position: absolute; inset: 0; border-radius: inherit;
+      background:
+        radial-gradient(130% 110% at 30% 0%, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.03) 60%),
+        radial-gradient(80% 90% at 75% 115%, rgba(255, 255, 255, 0.14), transparent 70%);
+      -webkit-backdrop-filter: blur(1.5px) saturate(1.7) brightness(1.18);
+      backdrop-filter: blur(1.5px) saturate(1.7) brightness(1.18);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.20),
+        inset 2px 3px 7px -3px rgba(255, 255, 255, 0.50),
+        inset -2px -4px 9px -4px rgba(255, 255, 255, 0.30),
+        0 9px 20px -6px rgba(0, 0, 0, 0.45),
+        0 2px 5px rgba(0, 0, 0, 0.18);
+    }
+    .glider i::after {
+      content: ""; position: absolute; top: 2px; left: 16%; width: 46%; height: 9px; border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0));
+      filter: blur(2px);
+    }
+    :root[data-theme="clair"] .glider i {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.7));
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+        inset 0 -3px 6px -3px rgba(0, 0, 0, 0.08),
+        0 8px 18px -6px rgba(0, 0, 0, 0.25),
+        0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+    :root[data-theme="clair"] .glider i::after { background: radial-gradient(closest-side, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0)); }
+    .glider.go i { animation: drop 1s cubic-bezier(0.3, 1.1, 0.4, 1); }
+    @keyframes drop {
+      0% { transform: scale(1, 1); }
+      30% { transform: scale(1.1, 0.93); }
+      62% { transform: scale(0.98, 1.04); }
+      100% { transform: scale(1, 1); }
+    }
+
+    /* Le contenu glisse dans le sens du déplacement */
+    .view.swap { animation: swapin 0.85s var(--ease); }
+    @keyframes swapin {
+      from { opacity: 0; transform: translateX(var(--dx, 0px)) scale(0.97); }
+      to { opacity: 1; transform: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .glider { transition: none; }
+      .glider.go i, .view.swap { animation: none; }
+      #tabs button.on, .seg button.on { transform: none; }
+    }
+
+    /* Liquide : gel brillant sur chaque surface, reflets de goutte, rebond au toucher */
+    :root { --spring: cubic-bezier(0.34, 1.56, 0.64, 1); }
+    #pill {
+      border-radius: 36px;
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.34),
+        inset 0 3px 8px -3px rgba(255, 255, 255, 0.22),
+        inset 0 -10px 18px -10px rgba(255, 255, 255, 0.10),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 0 32px rgba(255, 255, 255, 0.05);
+    }
+    #pill::before {
+      background:
+        radial-gradient(90% 36% at 28% -6%, rgba(255, 255, 255, 0.24), transparent 70%),
+        radial-gradient(60% 26% at 78% 108%, rgba(255, 255, 255, 0.11), transparent 72%),
+        linear-gradient(115deg, transparent 36%, rgba(255, 255, 255, 0.055) 47%, transparent 58%);
+    }
+    .item, .card, .btn, .key, .chip, .todo, .note, .lap, #gear, #tabs, .seg { isolation: isolate; }
+    .item::before, .card::before, .btn::before, .key::before, .chip::before, .todo::before, .note::before, .lap::before, #gear::before {
+      content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+      background:
+        radial-gradient(90% 60% at 30% -12%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 70%),
+        radial-gradient(70% 50% at 50% 125%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 70%);
+    }
+    .btn, .key, .chip, .todo, .lap, .card, #gear { position: relative; }
+    :root[data-theme="clair"] .item::before, :root[data-theme="clair"] .card::before, :root[data-theme="clair"] .btn::before,
+    :root[data-theme="clair"] .key::before, :root[data-theme="clair"] .chip::before, :root[data-theme="clair"] .todo::before,
+    :root[data-theme="clair"] .note::before, :root[data-theme="clair"] .lap::before, :root[data-theme="clair"] #gear::before { opacity: 0.55; }
+    .btn, .key, .chip, #gear { transition: background 0.35s, color 0.35s, box-shadow 0.35s, transform 0.7s var(--spring); }
+    .btn:hover, .key:hover, .chip:hover, #gear:hover { transform: scale(1.035); }
+    .btn:active, .key:active, .chip:active, #gear:active { transform: scale(1.04, 0.93); transition-duration: 0.12s; }
+    .item, .card, .todo, .note { box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.10), inset 0 -6px 10px -8px rgba(255, 255, 255, 0.10), inset 0 0 0 1px rgba(var(--ink), 0.04); }
+    .item { border-radius: 20px; }
+    .card { border-radius: 24px; }
+    .todo { border-radius: 18px; }
+    #search, .field { box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.10), inset 0 0 0 1px var(--line); }
+    #tabs, .seg { box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.26), inset 0 -1px 0 rgba(255, 255, 255, 0.10), inset 0 0 0 1px rgba(var(--ink), 0.05); }
+    .meter i { box-shadow: 0 0 8px rgba(var(--accent), 0.55); }
+    .meter { box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3); }
+    .sw i { border-radius: 18px; box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), inset 0 -6px 10px -6px rgba(255, 255, 255, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+    .sw { transition: transform 0.7s var(--spring); }
+    .sw:hover { transform: scale(1.05); }
+    @media (prefers-reduced-motion: reduce) {
+      .btn:hover, .key:hover, .chip:hover, #gear:hover, .sw:hover, .btn:active, .key:active, .chip:active, #gear:active { transform: none; }
+    }
+
+    /* Verre natif actif : la capsule devient plus transparente et suit le rayon du verre (27 px à l'écran) */
+    html.glass #pill, html.glass #pill::before, html.glass #pill::after { border-radius: calc(27px / var(--zoom, 1)); }
+    html.glass #pill {
+      background: linear-gradient(165deg, rgba(var(--bg1), calc(var(--op) * 0.34)) 0%, rgba(var(--bg2), calc(var(--op) * 0.52)) 100%);
+    }
+  </style>
+</head>
+<body>
+  <div id="pill">
+    <div id="top">
+      <div id="left">
+        <svg id="logo" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
+          <defs>
+            <linearGradient id="lg-body" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#2c2c35"/>
+              <stop offset="1" stop-color="#111116"/>
+            </linearGradient>
+            <linearGradient id="lg-rim" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#a29fff"/>
+              <stop offset="0.28" stop-color="#7774ff" stop-opacity="0.75"/>
+              <stop offset="0.65" stop-color="#ffffff" stop-opacity="0.10"/>
+              <stop offset="1" stop-color="#ffffff" stop-opacity="0.14"/>
+            </linearGradient>
+            <clipPath id="lg-clip"><rect x="1" y="5.5" width="22" height="13" rx="6.5"/></clipPath>
+            <filter id="lg-blur" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="2.2"/>
+            </filter>
+          </defs>
+          <g transform="rotate(-16 12 12)">
+            <rect x="1" y="5.5" width="22" height="13" rx="6.5" fill="url(#lg-body)"/>
+            <circle cx="2" cy="12" r="6" fill="#7774ff" opacity="0.6" filter="url(#lg-blur)" clip-path="url(#lg-clip)"/>
+            <rect x="1" y="5.5" width="22" height="13" rx="6.5" fill="none" stroke="url(#lg-rim)" stroke-width="1"/>
+            <rect class="eye" x="14.3" y="9.3" width="2.1" height="5.4" rx="1.05" fill="#fff"/>
+            <rect class="eye" x="18.1" y="9.3" width="2.1" height="5.4" rx="1.05" fill="#fff"/>
+          </g>
+        </svg>
+        <button id="close" title="Quitter">✕</button>
+      </div>
+      <div id="clock"></div>
+      <div id="tdisp"><small id="tlabel"></small><span id="tval"></span></div>
+    </div>
+    <div id="tabs">
+      <button class="on" data-v="clip">Copies</button>
+      <button data-v="time">Temps</button>
+      <button data-v="notes">Notes</button>
+      <button data-v="sys">Système</button>
+      <button data-v="launch">Lancer</button>
+      <button data-v="calc">Calcul</button>
+    </div>
+    <div class="view active" id="v-clip" data-view="clip">
+    <div id="searchwrap">
+      <input id="search" type="text" placeholder="Rechercher" spellcheck="false" autocomplete="off">
+      <button id="gear" title="Style : thème, opacité, taille">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+          <path d="M2 4h3.2M9.8 4H14M2 8h7M12.8 8H14M2 12h1.2M7.8 12H14"/>
+          <circle cx="7.5" cy="4" r="1.7"/><circle cx="11" cy="8" r="1.7"/><circle cx="5.5" cy="12" r="1.7"/>
+        </svg>
+      </button>
+    </div>
+    <div id="list"></div>
+    <div id="settings">
+      <div class="sect"><span>Thème</span></div>
+      <div id="themes"></div>
+      <div class="sect"><span>Opacité</span><span id="opval"></span></div>
+      <input type="range" id="op" min="25" max="100" step="1">
+      <div class="sect"><span>Taille</span><span id="scval"></span></div>
+      <input type="range" id="sc" min="80" max="130" step="5">
+      <button id="reset">Réinitialiser le style</button>
+    </div>
+    <div id="bar">
+      <button id="pause" title="Mettre en pause l'enregistrement">Pause</button>
+      <button id="paste" title="Coller directement dans l'app active au clic">Coller</button>
+      <button id="login" title="Lancer Pill à l'ouverture de session" hidden>Démarrage</button>
+      <button id="clear" title="Vider l'historique (les éléments épinglés restent)">Vider</button>
+    </div>
+    </div>
+    <div class="view pane" id="v-time" data-view="time">
+      <div class="seg" id="time-seg">
+        <button class="on" data-m="timer">Minuteur</button>
+        <button data-m="chrono">Chrono</button>
+        <button data-m="pomo">Pomodoro</button>
+      </div>
+      <div class="tmode on" id="m-timer">
+        <div class="bigtime" id="timer-disp">05:00</div>
+        <div class="chips" id="timer-chips"></div>
+        <div class="row"><input class="field num" id="timer-min" type="number" min="1" max="999" value="5"><span class="unit">min</span></div>
+        <div class="row"><button class="btn primary" id="timer-go">Démarrer</button><button class="btn" id="timer-reset">Réinit.</button></div>
+      </div>
+      <div class="tmode" id="m-chrono">
+        <div class="bigtime" id="chrono-disp">00:00.0</div>
+        <div class="row"><button class="btn primary" id="chrono-go">Démarrer</button><button class="btn" id="chrono-lap">Tour</button><button class="btn" id="chrono-reset">Réinit.</button></div>
+        <div id="laps"></div>
+      </div>
+      <div class="tmode" id="m-pomo">
+        <div class="phase" id="pomo-phase">Focus</div>
+        <div class="bigtime" id="pomo-disp">25:00</div>
+        <div class="dots" id="pomo-dots"></div>
+        <div class="row"><button class="btn primary" id="pomo-go">Démarrer</button><button class="btn" id="pomo-skip">Passer</button><button class="btn" id="pomo-reset">Réinit.</button></div>
+        <div class="cfg">
+          <span class="unit">Focus</span><input class="field num" id="cf-focus" type="number" min="1" max="180">
+          <span class="unit">Pause</span><input class="field num" id="cf-short" type="number" min="1" max="60">
+          <span class="unit">Longue</span><input class="field num" id="cf-long" type="number" min="1" max="120">
+        </div>
+        <div class="stat" id="pomo-stat"></div>
+      </div>
+    </div>
+
+    <div class="view pane" id="v-notes" data-view="notes">
+      <div class="seg" id="nt-seg"><button class="on" data-s="tasks">Tâches</button><button data-s="notes">Notes</button></div>
+      <div class="sp on" id="sp-tasks">
+        <div class="addrow">
+          <input class="field" id="todo-in" type="text" placeholder="Nouvelle tâche" spellcheck="false" autocomplete="off">
+          <input class="field" id="todo-due" type="date" title="Échéance (facultatif)">
+        </div>
+        <div class="scroll" id="todo-list"></div>
+        <div class="foot" id="todo-foot"></div>
+      </div>
+      <div class="sp" id="sp-notes">
+        <textarea class="field" id="note-in" placeholder="Écrire une note…  (⌘↵ pour l'ajouter)" spellcheck="false"></textarea>
+        <div class="row"><button class="btn" id="note-add">Ajouter la note</button></div>
+        <div class="scroll" id="note-list" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="view pane" id="v-sys" data-view="sys">
+      <div class="card"><h4><span>Processeur</span><b id="cpu-v">…</b></h4><div class="meter"><i id="cpu-b"></i></div>
+        <svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none"><polyline id="cpu-s" points=""/></svg></div>
+      <div class="card"><h4><span>Mémoire</span><b id="mem-v">…</b></h4><div class="meter"><i id="mem-b"></i></div><div class="sub" id="mem-s"></div></div>
+      <div class="card"><h4><span>Batterie</span><b id="bat-v">…</b></h4><div class="meter"><i id="bat-b"></i></div><div class="sub" id="bat-s"></div></div>
+    </div>
+
+    <div class="view pane" id="v-calc" data-view="calc">
+      <div id="c-screen">
+        <div id="c-expr">0</div>
+        <button id="c-res" title="Copier le résultat"></button>
+      </div>
+      <div id="c-keys"></div>
+    </div>
+    <div class="view pane" id="v-launch" data-view="launch">
+      <input class="field" id="lq" type="text" placeholder="App, fichier, adresse ou calcul" spellcheck="false" autocomplete="off">
+      <div id="lres"></div>
+      <div class="lhint">↵ ouvrir · ⌘↵ afficher dans le Finder</div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Horloge animée ----------
+    const clock = document.getElementById('clock');
+    const strips = [];
+    ['d', 'd', ':', 'd', 'd', ':', 'd', 'd'].forEach(type => {
+      if (type === ':') {
+        const colon = document.createElement('span');
+        colon.className = 'colon';
+        colon.textContent = ':';
+        clock.appendChild(colon);
+        return;
+      }
+      const slot = document.createElement('span');
+      slot.className = 'slot';
+      const strip = document.createElement('span');
+      strip.className = 'strip';
+      for (let i = 0; i < 10; i++) {
+        const digit = document.createElement('span');
+        digit.textContent = i;
+        strip.appendChild(digit);
+      }
+      slot.appendChild(strip);
+      clock.appendChild(slot);
+      strips.push(strip);
+    });
+
+    // La largeur des chiffres dépend de la police : on la mesure au lieu de la fixer à la main
+    function fitDigits() {
+      const probe = document.createElement('span');
+      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+      clock.appendChild(probe);
+      let widest = 0;
+      for (let i = 0; i < 10; i++) {
+        probe.textContent = i;
+        widest = Math.max(widest, probe.getBoundingClientRect().width);
+      }
+      probe.remove();
+      clock.style.setProperty('--digit-w', (widest + 2.5) + 'px');
+    }
+    fitDigits();
+    document.fonts.ready.then(fitDigits, fitDigits);
+
+    function tick() {
+      const now = new Date();
+      const text = [now.getHours(), now.getMinutes(), now.getSeconds()]
+        .map(v => String(v).padStart(2, '0')).join('');
+      [...text].forEach((char, i) => {
+        strips[i].style.transform = `translateY(${-Number(char)}em)`;
+      });
+    }
+    tick();
+    requestAnimationFrame(() => document.body.classList.add('ready'));
+    setInterval(tick, 1000);
+
+    // ---------- Ouverture / fermeture du panneau ----------
+    const pillEl = document.getElementById('pill');
+    const list = document.getElementById('list');
+    const search = document.getElementById('search');
+    let open = false;
+    let query = '';
+    let selected = 0;
+    let styling = false; // panneau Style affiché à la place de la liste
+    let view = 'clip';   // onglet affiché : clip, time, notes, sys, launch
+
+    function setPanel(next, v) {
+      open = next;
+      if (!open) setStyling(false);
+      if (v) setView(v);
+      pillEl.classList.toggle('open', open);
+      window.pillAPI.setExpanded(open);
+      if (open) {
+        list.classList.add('enter');
+        setTimeout(() => list.classList.remove('enter'), 700);
+        focusActive();
+      } else {
+        search.blur();
+        lq.blur();
+        clearLauncher();
+        if (search.value) {
+          search.value = '';
+          query = '';
+          selected = 0;
+          render();
+        }
+      }
+      sysSync();
+    }
+    // Ouverture demandée depuis l'extérieur (raccourci clavier, icône de la barre de menus)
+    window.pillAPI.onSetPanel(setPanel);
+
+    // ---------- Déplacement (glisser) et clic ----------
+    let clickTimer = null, pressed = false, moved = false, startX = 0, startY = 0;
+
+    document.getElementById('top').addEventListener('mousedown', e => {
+      if (e.target.closest('#close')) return;
+      pressed = true; moved = false;
+      startX = e.screenX; startY = e.screenY;
+      window.pillAPI.dragStart();
+    });
+    window.addEventListener('mousemove', e => {
+      if (!pressed) return;
+      const dx = e.screenX - startX, dy = e.screenY - startY;
+      if (!moved && Math.hypot(dx, dy) < 4) return;
+      moved = true;
+      window.pillAPI.dragMove(dx, dy);
+    });
+    window.addEventListener('mouseup', () => {
+      if (!pressed) return;
+      pressed = false;
+      if (!moved) {
+        if (clickTimer) {
+          // 2e clic rapide = double-clic : la capsule s'aimante au bord le plus proche
+          clearTimeout(clickTimer);
+          clickTimer = null;
+          window.pillAPI.snap();
+        } else {
+          // 1er clic : on attend un instant pour voir s'il y en a un 2e
+          clickTimer = setTimeout(() => {
+            clickTimer = null;
+            setPanel(!open);
+          }, 220);
+        }
+      }
+    });
+    document.getElementById('close').addEventListener('click', () => window.pillAPI.quit());
+
+    // ---------- Historique du presse-papiers ----------
+    const PIN_ICON = '<svg viewBox="0 0 16 16"><path d="M10.2 1.2 14.8 5.8 13.1 6.5 10.4 9.2 10.9 12.4 9.8 13.5 6.5 10.2 2.4 14.3 1.7 13.6 5.8 9.5 2.5 6.2 3.6 5.1 6.8 5.6 9.5 2.9z"/></svg>';
+
+    // ---------- Détection du contenu ----------
+    const ICONS = {
+      mail: '<rect x="3" y="5" width="18" height="14" rx="3.5"/><path d="M3.5 8.5 12 14l8.5-5.5"/>',
+      link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+      phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+      code: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4"/>',
+      calc: '<path d="M5 9h14M5 15h14"/>'
+    };
+
+    // Calculatrice sûre : analyse l'expression à la main, sans eval
+    function calc(src, loose) {
+      let s = String(src).trim().replace(/[−–]/g, '-').replace(/÷/g, '/').replace(/×/g, '*')
+        .replace(/(\d)\s*x\s*(?=[\d(.,])/gi, '$1*');
+      if (!s || s.length > 120 || !/^[\d\s+\-*/^%().,]+$/.test(s) || !/\d/.test(s)) return null;
+      if (!(loose ? /[+\-*/^%(]/ : /[+*/^%(]/).test(s.replace(/^\s*-/, ''))) return null;
+      if (!s.includes('.')) s = s.replace(/(\d),(\d)/g, '$1.$2');
+      if (/,/.test(s)) return null;
+      let i = 0;
+      const ws = () => { while (s[i] === ' ') i++; };
+      function expr() {
+        let v = term();
+        for (ws(); s[i] === '+' || s[i] === '-'; ws()) { const o = s[i++]; const r = term(); v = o === '+' ? v + r : v - r; }
+        return v;
+      }
+      function term() {
+        let v = power();
+        for (ws(); s[i] === '*' || s[i] === '/'; ws()) { const o = s[i++]; const r = power(); v = o === '*' ? v * r : v / r; }
+        return v;
+      }
+      function power() { const b = unary(); ws(); if (s[i] === '^') { i++; return Math.pow(b, power()); } return b; }
+      function unary() { ws(); if (s[i] === '-') { i++; return -unary(); } if (s[i] === '+') { i++; return unary(); } return post(); }
+      function post() {
+        let v = prim();
+        for (ws(); s[i] === '%'; ws()) { i++; v /= 100; }
+        return v;
+      }
+      function prim() {
+        ws();
+        if (s[i] === '(') { i++; const v = expr(); ws(); if (s[i++] !== ')') throw 0; return v; }
+        const m = /^\d+(\.\d+)?|^\.\d+/.exec(s.slice(i));
+        if (!m) throw 0;
+        i += m[0].length;
+        return parseFloat(m[0]);
+      }
+      let r;
+      try { r = expr(); ws(); if (i !== s.length) return null; } catch { return null; }
+      if (!isFinite(r)) return null;
+      r = Number(r.toPrecision(12));
+      return {
+        display: r.toLocaleString('fr-FR', { maximumFractionDigits: 10 }),
+        copy: r.toLocaleString('fr-FR', { maximumFractionDigits: 10, useGrouping: false })
+      };
+    }
+
+    // Reconnaît ce qu'on vient de copier. null = texte ordinaire.
+    const kindCache = new Map();
+    function detect(text) {
+      if (kindCache.has(text)) return kindCache.get(text);
+      const t = text.trim();
+      let k = null;
+      if (t.length <= 300 && !/\s/.test(t) && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(t)) {
+        k = { label: 'Adresse e-mail', icon: 'mail', open: 'mailto:' + t };
+      } else if (t.length <= 2000 && !/\s/.test(t) && (/^https?:\/\/\S+$/i.test(t) || /^www\.\S+\.[a-z]{2,}\S*$/i.test(t))) {
+        k = { label: 'Lien', icon: 'link', open: /^www\./i.test(t) ? 'https://' + t : t };
+      } else if (/^(#[0-9a-f]{3,4}|#[0-9a-f]{6}|#[0-9a-f]{8}|rgba?\(\s*\d{1,3}(\s*,\s*\d{1,3}){2}(\s*,\s*[\d.]+)?\s*\)|hsla?\(\s*\d{1,3}(\.\d+)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%(\s*,\s*[\d.]+)?\s*\))$/i.test(t)) {
+        k = { label: 'Couleur', color: t };
+      } else if (/^(\+|00)?\d[\d\s.()-]{7,}\d$/.test(t) && (t.match(/\d/g) || []).length >= 9 && (t.match(/\d/g) || []).length <= 15) {
+        k = { label: 'Téléphone', icon: 'phone', open: 'tel:' + t.replace(/[^\d+]/g, '') };
+      } else if (t.length <= 120 && !/^[\d.,\s]+%$/.test(t) && calc(t)) {
+        k = { label: 'Calcul', icon: 'calc', result: calc(t) };
+      } else if (/\n/.test(t) && (t.match(/[{}();=<>[\]]/g) || []).length >= 6 &&
+                 /\b(function|const|let|var|import|export|class|def|return|if|else|for|while|public|void|SELECT|FROM)\b|=>|<\/?[a-z][a-z0-9]*[ >]/.test(t)) {
+        k = { label: 'Code', icon: 'code', mono: true };
+      }
+      if (kindCache.size > 300) kindCache.clear();
+      kindCache.set(text, k);
+      return k;
+    }
+    let items = [];
+
+    function visibleItems() {
+      if (!query) return items;
+      return items.filter(item => item.type === 'text' && item.hay.includes(query));
+    }
+
+    function useItem(item, row) {
+      window.pillAPI.use(item.id);
+      if (!row) return;
+      row.classList.add('copied');
+      setTimeout(() => row.classList.remove('copied'), 600);
+    }
+
+    function render() {
+      const keep = list.scrollTop;
+      list.innerHTML = '';
+      const shown = visibleItems();
+      if (selected >= shown.length) selected = Math.max(0, shown.length - 1);
+
+      if (!shown.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = query ? 'Aucun résultat' : 'Rien copié pour l\u2019instant';
+        list.appendChild(empty);
+        return;
+      }
+
+      shown.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'item ' + item.type;
+        if (item.pinned) row.classList.add('pinned');
+        if (index === selected) row.classList.add('sel');
+        if (index > 0 && shown[index - 1].pinned && !item.pinned) row.classList.add('after-pinned');
+        row.style.setProperty('--i', Math.min(index, 10));
+
+        if (item.type === 'image') {
+          const img = new Image();
+          img.src = item.preview;
+          row.appendChild(img);
+        } else {
+          const kind = detect(item.text);
+          if (kind) {
+            const tag = document.createElement('div');
+            tag.className = 'tag';
+            if (kind.color) {
+              const dot = document.createElement('i');
+              dot.className = 'dot';
+              dot.style.background = kind.color;
+              tag.appendChild(dot);
+            } else {
+              tag.innerHTML = '<svg viewBox="0 0 24 24">' + ICONS[kind.icon] + '</svg>';
+            }
+            tag.appendChild(document.createTextNode(kind.label));
+            row.appendChild(tag);
+          }
+          const body = document.createElement('div');
+          body.className = 'body' + (kind && kind.mono ? ' mono' : '');
+          body.textContent = item.text;
+          row.appendChild(body);
+          if (kind && kind.result) {
+            const res = document.createElement('div');
+            res.className = 'res';
+            res.textContent = '= ' + kind.result.display;
+            row.appendChild(res);
+          }
+          if (kind && (kind.open || kind.result)) {
+            const go = document.createElement('button');
+            go.className = 'go';
+            go.title = kind.result ? 'Copier le résultat' : (kind.open.startsWith('mailto') ? 'Écrire un e-mail' : kind.open.startsWith('tel') ? 'Appeler' : 'Ouvrir le lien');
+            go.textContent = kind.result ? '=' : '↗';
+            go.addEventListener('click', e => {
+              e.stopPropagation();
+              if (kind.result) navigator.clipboard.writeText(kind.result.copy).catch(() => {});
+              else window.pillAPI.openExternal(kind.open);
+            });
+            row.dataset.go = '1';
+            row._go = go;
+          }
+        }
+
+        const acts = document.createElement('div');
+        acts.className = 'acts';
+        const pin = document.createElement('button');
+        pin.className = 'pin';
+        pin.title = item.pinned ? 'Désépingler' : 'Épingler';
+        pin.innerHTML = PIN_ICON;
+        pin.addEventListener('click', e => {
+          e.stopPropagation();
+          window.pillAPI.pin(item.id);
+        });
+        const del = document.createElement('button');
+        del.className = 'del';
+        del.title = 'Supprimer';
+        del.textContent = '✕';
+        del.addEventListener('click', e => {
+          e.stopPropagation();
+          window.pillAPI.remove(item.id);
+        });
+        if (row._go) acts.appendChild(row._go);
+        acts.append(pin, del);
+        row.appendChild(acts);
+
+        row.addEventListener('click', () => useItem(item, row));
+        list.appendChild(row);
+      });
+      list.scrollTop = keep;
+    }
+
+    function setItems(next) {
+      items = next;
+      render();
+    }
+    window.pillAPI.getHistory().then(setItems);
+    window.pillAPI.onHistory(setItems);
+
+    // ---------- Recherche et clavier ----------
+    // La sélection au clavier n'est visible que quand on tape ou qu'on utilise les flèches
+    function setNav(on) { list.classList.toggle('nav', on); }
+    list.addEventListener('mousemove', () => setNav(false));
+
+    search.addEventListener('input', () => {
+      setStyling(false);
+      query = search.value.trim().toLowerCase();
+      selected = 0;
+      setNav(true);
+      render();
+    });
+
+    window.addEventListener('keydown', e => {
+      if (!open) return;
+      if (view !== 'clip') {
+        // Hors de l'historique : Échap efface la recherche du lanceur, puis ferme
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          if (view === 'launch' && lq.value) { lq.value = ''; runLaunch(); }
+          else setPanel(false);
+        }
+        return;
+      }
+      if (styling) {
+        if (e.key === 'Escape') { e.preventDefault(); setStyling(false); }
+        return;
+      }
+      const shown = visibleItems();
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (search.value) {
+          search.value = '';
+          query = '';
+          selected = 0;
+          render();
+        } else {
+          setPanel(false);
+        }
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!shown.length) return;
+        const step = e.key === 'ArrowDown' ? 1 : -1;
+        selected = (selected + step + shown.length) % shown.length;
+        setNav(true);
+        [...list.children].forEach((el, i) => el.classList.toggle('sel', i === selected));
+        const row = list.children[selected];
+        if (row) row.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        const item = shown[selected];
+        if (!item) return;
+        e.preventDefault();
+        useItem(item, list.children[selected]);
+      }
+    });
+
+    // ---------- Style : thème, opacité, taille ----------
+    const THEMES = [
+      { id: 'verre',  label: 'Verre',  c: ['#4a4c58', '#0c0c10'] },
+      { id: 'minuit', label: 'Minuit', c: ['#2e3c60', '#070b18'] },
+      { id: 'violet', label: 'Violet', c: ['#4a3c6c', '#0d091a'] },
+      { id: 'ambre',  label: 'Ambre',  c: ['#604a2e', '#150e07'] },
+      { id: 'foret',  label: 'Forêt',  c: ['#2e483e', '#070f0c'] },
+      { id: 'clair',  label: 'Clair',  c: ['#ffffff', '#d8d8e0'] }
+    ];
+    const DEFAULT_STYLE = { theme: 'verre', opacity: 0.7, scale: 1 };
+    const rootEl = document.documentElement;
+    const themesEl = document.getElementById('themes');
+    const opEl = document.getElementById('op');
+    const scEl = document.getElementById('sc');
+    const opVal = document.getElementById('opval');
+    const scVal = document.getElementById('scval');
+
+    THEMES.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'sw';
+      btn.dataset.id = t.id;
+      btn.innerHTML = '<i style="background:linear-gradient(180deg,' + t.c[0] + ',' + t.c[1] + ')"></i>' + t.label;
+      btn.addEventListener('click', () => {
+        applyLook({ theme: t.id });
+        window.pillAPI.setStyle({ theme: t.id });
+      });
+      themesEl.appendChild(btn);
+    });
+
+    function setStyling(on) {
+      styling = on;
+      pillEl.classList.toggle('styling', on);
+    }
+    document.getElementById('gear').addEventListener('click', () => setStyling(!styling));
+
+    // Applique le style à l'écran (appelé au démarrage, et en direct pendant qu'on règle)
+    function applyLook(look) {
+      if (look.theme) {
+        rootEl.dataset.theme = look.theme;
+        themesEl.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b.dataset.id === look.theme));
+      }
+      if (typeof look.opacity === 'number') {
+        rootEl.style.setProperty('--op', look.opacity);
+        opVal.textContent = Math.round(look.opacity * 100) + ' %';
+        if (document.activeElement !== opEl) opEl.value = Math.round(look.opacity * 100);
+      }
+      if (typeof look.scale === 'number') {
+        rootEl.style.setProperty('--zoom', look.scale);
+        scVal.textContent = Math.round(look.scale * 100) + ' %';
+        if (document.activeElement !== scEl) scEl.value = Math.round(look.scale * 100);
+      }
+    }
+    // L'opacité se voit en direct ; la taille s'applique au relâchement (la fenêtre change de taille)
+    opEl.addEventListener('input', () => applyLook({ opacity: opEl.value / 100 }));
+    opEl.addEventListener('change', () => window.pillAPI.setStyle({ opacity: opEl.value / 100 }));
+    scEl.addEventListener('input', () => { scVal.textContent = scEl.value + ' %'; });
+    scEl.addEventListener('change', () => window.pillAPI.setStyle({ scale: scEl.value / 100 }));
+    document.getElementById('reset').addEventListener('click', () => {
+      if (document.activeElement) document.activeElement.blur();
+      applyLook(DEFAULT_STYLE);
+      window.pillAPI.setStyle(DEFAULT_STYLE);
+    });
+
+    // ---------- Outils communs ----------
+    // Notes, tâches et minuteurs : enregistrés (chiffrés) par le processus principal.
+    // Les anciennes données du navigateur sont reprises une fois, puis supprimées.
+    const LS = {
+      get(k, d) {
+        try {
+          const v = window.pillAPI.storeGet(k);
+          if (v !== null && v !== undefined) return v;
+          const old = localStorage.getItem('pill.' + k);
+          if (old) {
+            const parsed = JSON.parse(old);
+            window.pillAPI.storeSet(k, parsed);
+            localStorage.removeItem('pill.' + k);
+            return parsed;
+          }
+        } catch {}
+        return d;
+      },
+      set(k, v) { try { window.pillAPI.storeSet(k, v); } catch {} }
+    };
+    const $ = id => document.getElementById(id);
+    const pad2 = n => String(n).padStart(2, '0');
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    function el(tag, cls, text) {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+    function todayKey() { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+    function dateLabel(key) {
+      const d = new Date(key.length > 10 ? key : key + 'T00:00:00');
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    }
+    function emptyMsg(text) { const d = el('div', 'empty', text); d.style.marginTop = '24px'; return d; }
+
+    // ---------- Onglets ----------
+    const VIEWS = ['clip', 'time', 'notes', 'sys', 'launch', 'calc'];
+    const tabsEl = $('tabs');
+    function focusActive() {
+      setTimeout(() => {
+        const target = { clip: search, launch: lq }[view];
+        if (target) target.focus();
+      }, 120);
+    }
+    function setView(v) {
+      if (!VIEWS.includes(v)) return;
+      const prev = view;
+      view = v;
+      setStyling(false);
+      tabsEl.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+      document.querySelectorAll('.view').forEach(s => {
+        const on = s.dataset.view === v;
+        s.classList.toggle('active', on);
+        if (on && prev !== v) {
+          s.style.setProperty('--dx', (VIEWS.indexOf(v) > VIEWS.indexOf(prev) ? 22 : -22) + 'px');
+          s.classList.remove('swap');
+          void s.offsetWidth;
+          s.classList.add('swap');
+        }
+      });
+      if (open) focusActive();
+      if (v === 'time') renderTime();
+      if (v === 'notes') { renderTasks(); renderNotes(); }
+      sysSync();
+    }
+    tabsEl.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (b) setView(b.dataset.v);
+    });
+
+    // ---------- Goutte de verre sous l'onglet actif ----------
+    function addGlider(box) {
+      const g = document.createElement('div');
+      g.className = 'glider';
+      g.innerHTML = '<i></i>';
+      box.prepend(g);
+      function place(instant) {
+        const b = box.querySelector('button.on');
+        if (!b) return;
+        if (instant) g.style.transition = 'none';
+        g.style.width = (b.offsetWidth + 12) + 'px';
+        g.style.transform = 'translateX(' + (b.offsetLeft - 6) + 'px)';
+        if (instant) { void g.offsetWidth; g.style.transition = ''; }
+      }
+      const mo = new MutationObserver(() => {
+        place(false);
+        g.classList.remove('go');
+        void g.offsetWidth;
+        g.classList.add('go');
+      });
+      box.querySelectorAll('button').forEach(b => mo.observe(b, { attributes: true, attributeFilter: ['class'] }));
+      new ResizeObserver(() => place(true)).observe(box);
+      place(true);
+    }
+    document.querySelectorAll('#tabs, .seg').forEach(addGlider);
+
+    // ---------- Temps : minuteur, chrono, pomodoro ----------
+    const tlabel = $('tlabel'), tval = $('tval');
+    const saved = LS.get('time', {});
+    let timeMode = 'timer';
+
+    const fmtDown = ms => {
+      const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+      return (h ? h + ':' + pad2(m) : pad2(m)) + ':' + pad2(s % 60);
+    };
+    const fmtUp = ms => {
+      const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+      return (h ? h + ':' + pad2(m) : pad2(m)) + ':' + pad2(s % 60);
+    };
+    const fmtChrono = ms => fmtUp(ms) + '.' + Math.floor(ms % 1000 / 100);
+
+    function alarm(title, body) {
+      window.pillAPI.notify(title, body);
+      pillEl.classList.add('alarm');
+      setTimeout(() => pillEl.classList.remove('alarm'), 8000);
+    }
+    pillEl.addEventListener('mousedown', () => pillEl.classList.remove('alarm'));
+
+    // Minuteur
+    const timer = { dur: (saved.timerMin || 5) * 60000, left: (saved.timerMin || 5) * 60000, running: false, endAt: 0 };
+    const timerLeft = () => timer.running ? Math.max(0, timer.endAt - Date.now()) : timer.left;
+    function saveTime() { LS.set('time', { timerMin: timer.dur / 60000, pomo: pcfg }); }
+    function setTimerMin(min) {
+      min = Math.min(999, Math.max(1, Math.round(Number(min) || 5)));
+      timer.dur = min * 60000;
+      if (!timer.running) timer.left = timer.dur;
+      $('timer-min').value = min;
+      document.querySelectorAll('#timer-chips .chip').forEach(c => c.classList.toggle('on', Number(c.dataset.min) === min));
+      saveTime();
+      renderTime();
+    }
+    [1, 5, 10, 15, 30].forEach(min => {
+      const c = el('button', 'chip', min + ' min');
+      c.dataset.min = min;
+      c.addEventListener('click', () => setTimerMin(min));
+      $('timer-chips').appendChild(c);
+    });
+    $('timer-min').addEventListener('change', e => setTimerMin(e.target.value));
+    $('timer-go').addEventListener('click', () => {
+      if (timer.running) { timer.left = timerLeft(); timer.running = false; }
+      else {
+        if (timer.left <= 0) timer.left = timer.dur;
+        timer.endAt = Date.now() + timer.left;
+        timer.running = true;
+      }
+      tickTimers();
+    });
+    $('timer-reset').addEventListener('click', () => { timer.running = false; timer.left = timer.dur; tickTimers(); });
+
+    // Chronomètre
+    const chrono = { running: false, acc: 0, startAt: 0, laps: [] };
+    const chronoElapsed = () => chrono.acc + (chrono.running ? Date.now() - chrono.startAt : 0);
+    function renderLaps() {
+      const box = $('laps');
+      box.innerHTML = '';
+      let prev = 0;
+      const rows = chrono.laps.map((t, i) => { const r = { n: i + 1, split: t - prev, total: t }; prev = t; return r; });
+      rows.reverse().forEach(r => {
+        const row = el('div', 'lap');
+        row.append(el('span', '', 'Tour ' + r.n), el('span', '', fmtChrono(r.split)), el('span', '', fmtChrono(r.total)));
+        box.appendChild(row);
+      });
+    }
+    $('chrono-go').addEventListener('click', () => {
+      if (chrono.running) { chrono.acc = chronoElapsed(); chrono.running = false; }
+      else { chrono.startAt = Date.now(); chrono.running = true; }
+      tickTimers();
+    });
+    $('chrono-lap').addEventListener('click', () => {
+      const t = chronoElapsed();
+      if (t <= 0) return;
+      chrono.laps.push(t);
+      renderLaps();
+    });
+    $('chrono-reset').addEventListener('click', () => {
+      chrono.running = false; chrono.acc = 0; chrono.laps = [];
+      renderLaps();
+      tickTimers();
+    });
+
+    // Pomodoro : 4 sessions de focus, pauses courtes, puis une pause longue
+    const clampMin = (v, max, d) => Math.min(max, Math.max(1, Math.round(Number(v) || d)));
+    const pcfg = Object.assign({ focus: 25, short: 5, long: 15 }, saved.pomo);
+    const pomo = { phase: 'focus', cycle: 1, left: pcfg.focus * 60000, running: false, endAt: 0 };
+    const pDur = ph => pcfg[ph] * 60000;
+    const pomoLeft = () => pomo.running ? Math.max(0, pomo.endAt - Date.now()) : pomo.left;
+    const PHASE_LABEL = { focus: 'Focus', short: 'Pause courte', long: 'Pause longue' };
+    function pomoSet(phase) {
+      pomo.phase = phase;
+      pomo.left = pDur(phase);
+      if (pomo.running) pomo.endAt = Date.now() + pomo.left;
+    }
+    function pomoNextPhase() {
+      if (pomo.phase === 'focus') return pomo.cycle >= 4 ? 'long' : 'short';
+      if (pomo.phase === 'long') { pomo.cycle = 1; return 'focus'; }
+      pomo.cycle++;
+      return 'focus';
+    }
+    function addFocusStat(min) {
+      const s = LS.get('pomoStat', {});
+      const day = todayKey();
+      const cur = s.d === day ? s : { d: day, min: 0, n: 0 };
+      cur.min += min; cur.n += 1;
+      LS.set('pomoStat', cur);
+    }
+    function pomoFinish() {
+      const was = pomo.phase;
+      if (was === 'focus') addFocusStat(pcfg.focus);
+      const next = pomoNextPhase();
+      pomoSet(next);
+      if (was === 'long') {
+        pomo.running = false; // un cycle complet est terminé : on s'arrête
+        alarm('Cycle terminé', 'Bravo, 4 pomodoros !');
+      } else if (next === 'focus') {
+        alarm('Pause terminée', 'On reprend le travail.');
+      } else {
+        alarm('Session terminée', next === 'long' ? 'Pause longue, tu l\u2019as méritée.' : 'Pause courte : respire un peu.');
+      }
+    }
+    $('pomo-go').addEventListener('click', () => {
+      if (pomo.running) { pomo.left = pomoLeft(); pomo.running = false; }
+      else {
+        if (pomo.left <= 0) pomo.left = pDur(pomo.phase);
+        pomo.endAt = Date.now() + pomo.left;
+        pomo.running = true;
+      }
+      tickTimers();
+    });
+    $('pomo-skip').addEventListener('click', () => { pomoSet(pomoNextPhase()); tickTimers(); });
+    $('pomo-reset').addEventListener('click', () => {
+      pomo.running = false; pomo.cycle = 1; pomoSet('focus');
+      tickTimers();
+    });
+    [['cf-focus', 'focus', 180], ['cf-short', 'short', 60], ['cf-long', 'long', 120]].forEach(([id, key, max]) => {
+      const input = $(id);
+      input.value = pcfg[key];
+      input.addEventListener('change', () => {
+        pcfg[key] = clampMin(input.value, max, pcfg[key]);
+        input.value = pcfg[key];
+        if (!pomo.running && pomo.phase === key) pomo.left = pDur(key);
+        saveTime();
+        renderTime();
+      });
+    });
+
+    // Affichage dans le panneau
+    $('time-seg').addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      timeMode = b.dataset.m;
+      renderTime();
+    });
+    function renderTime() {
+      document.querySelectorAll('#time-seg button').forEach(b => b.classList.toggle('on', b.dataset.m === timeMode));
+      document.querySelectorAll('.tmode').forEach(m => m.classList.toggle('on', m.id === 'm-' + timeMode));
+      if (timeMode === 'timer') {
+        const left = timerLeft();
+        $('timer-disp').textContent = fmtDown(left);
+        $('timer-go').textContent = timer.running ? 'Pause' : (left > 0 && left < timer.dur ? 'Reprendre' : 'Démarrer');
+        document.querySelectorAll('#timer-chips .chip').forEach(c => c.classList.toggle('on', Number(c.dataset.min) === timer.dur / 60000));
+      } else if (timeMode === 'chrono') {
+        const t = chronoElapsed();
+        $('chrono-disp').textContent = fmtChrono(t);
+        $('chrono-go').textContent = chrono.running ? 'Pause' : (t > 0 ? 'Reprendre' : 'Démarrer');
+      } else {
+        const left = pomoLeft();
+        $('pomo-phase').textContent = PHASE_LABEL[pomo.phase];
+        $('pomo-disp').textContent = fmtDown(left);
+        $('pomo-go').textContent = pomo.running ? 'Pause' : (left < pDur(pomo.phase) ? 'Reprendre' : 'Démarrer');
+        const dots = $('pomo-dots');
+        if (dots.children.length !== 4) { dots.innerHTML = ''; for (let i = 0; i < 4; i++) dots.appendChild(document.createElement('i')); }
+        [...dots.children].forEach((d, i) => {
+          const n = i + 1;
+          d.className = (n < pomo.cycle || (pomo.phase !== 'focus' && n === pomo.cycle)) ? 'done' : (n === pomo.cycle ? 'cur' : '');
+        });
+        const s = LS.get('pomoStat', {});
+        const today = s.d === todayKey() ? s : { min: 0, n: 0 };
+        $('pomo-stat').textContent = today.n
+          ? 'Aujourd\u2019hui : ' + today.min + ' min de concentration · ' + today.n + ' session' + (today.n > 1 ? 's' : '')
+          : 'Aucune session terminée aujourd\u2019hui';
+      }
+    }
+
+    // Dans la capsule réduite, le minuteur en cours remplace l'horloge
+    function updateCapsule() {
+      let label = null, value = '';
+      if (timer.running) { label = 'MIN'; value = fmtDown(timerLeft()); }
+      else if (pomo.running) { label = pomo.phase === 'focus' ? 'Focus' : 'Pause'; value = fmtDown(pomoLeft()); }
+      else if (chrono.running) { label = 'CHRONO'; value = fmtUp(chronoElapsed()); }
+      pillEl.classList.toggle('timing', label !== null);
+      if (label !== null) { tlabel.textContent = label; tval.textContent = value; }
+    }
+    function tickTimers() {
+      const now = Date.now();
+      if (timer.running && now >= timer.endAt) {
+        timer.running = false; timer.left = 0;
+        alarm('Minuteur terminé', 'Ton minuteur de ' + Math.round(timer.dur / 60000) + ' min est terminé.');
+      }
+      if (pomo.running && now >= pomo.endAt) pomoFinish();
+      updateCapsule();
+      if (open && view === 'time') renderTime();
+    }
+    setInterval(tickTimers, 100);
+    renderTime();
+
+    // ---------- Tâches et notes ----------
+    let tasks = LS.get('tasks', []);
+    let notes = LS.get('notes', []);
+    const saveTasks = () => LS.set('tasks', tasks);
+    const saveNotes = () => LS.set('notes', notes);
+
+    $('nt-seg').addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      document.querySelectorAll('#nt-seg button').forEach(x => x.classList.toggle('on', x === b));
+      $('sp-tasks').classList.toggle('on', b.dataset.s === 'tasks');
+      $('sp-notes').classList.toggle('on', b.dataset.s === 'notes');
+      setTimeout(() => (b.dataset.s === 'tasks' ? $('todo-in') : $('note-in')).focus(), 50);
+    });
+
+    function renderTasks() {
+      const box = $('todo-list');
+      box.innerHTML = '';
+      const today = todayKey();
+      const sorted = [...tasks].sort((a, b) =>
+        (Number(a.done) - Number(b.done)) || String(a.due || '9999').localeCompare(String(b.due || '9999')));
+      if (!sorted.length) box.appendChild(emptyMsg('Rien à faire pour l\u2019instant'));
+      sorted.forEach(t => {
+        const row = el('div', 'todo' + (t.done ? ' done' : ''));
+        const ck = el('button', 'ck', '✓');
+        ck.title = t.done ? 'Marquer comme à faire' : 'Marquer comme terminée';
+        ck.addEventListener('click', () => { t.done = !t.done; saveTasks(); renderTasks(); });
+        row.append(ck, el('div', 'tx', t.text));
+        if (t.due) {
+          const late = !t.done && t.due < today;
+          const label = t.due === today ? 'Aujourd\u2019hui' : (late ? 'En retard · ' : '') + dateLabel(t.due);
+          row.appendChild(el('span', 'due' + (late ? ' late' : ''), label));
+        }
+        const x = el('button', 'x', '✕');
+        x.title = 'Supprimer';
+        x.addEventListener('click', () => { tasks = tasks.filter(m => m !== t); saveTasks(); renderTasks(); });
+        row.appendChild(x);
+        box.appendChild(row);
+      });
+      const foot = $('todo-foot');
+      foot.innerHTML = '';
+      const left = tasks.filter(t => !t.done).length;
+      foot.appendChild(el('span', '', left + ' à faire'));
+      if (tasks.some(t => t.done)) {
+        const clear = el('button', '', 'Effacer les terminées');
+        clear.addEventListener('click', () => { tasks = tasks.filter(t => !t.done); saveTasks(); renderTasks(); });
+        foot.appendChild(clear);
+      }
+    }
+    function addTask() {
+      const input = $('todo-in');
+      const text = input.value.trim();
+      if (!text) return;
+      tasks.push({ id: uid(), text, done: false, due: $('todo-due').value || null });
+      input.value = '';
+      $('todo-due').value = '';
+      saveTasks();
+      renderTasks();
+    }
+    $('todo-in').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addTask(); } });
+
+    function renderNotes() {
+      const box = $('note-list');
+      box.innerHTML = '';
+      if (!notes.length) box.appendChild(emptyMsg('Aucune note'));
+      notes.forEach(n => {
+        const card = el('div', 'note');
+        card.append(el('div', '', n.text), el('small', '', dateLabel(n.t)));
+        const x = el('button', 'x', '✕');
+        x.title = 'Supprimer';
+        x.addEventListener('click', e => { e.stopPropagation(); notes = notes.filter(m => m !== n); saveNotes(); renderNotes(); });
+        card.appendChild(x);
+        card.addEventListener('click', () => editNote(n, card));
+        box.appendChild(card);
+      });
+    }
+    function editNote(n, card) {
+      if (card.querySelector('textarea')) return;
+      const ta = el('textarea', 'field');
+      ta.value = n.text;
+      card.replaceChildren(ta);
+      const fit = () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 200) + 'px'; };
+      fit();
+      ta.focus();
+      ta.addEventListener('input', fit);
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        n.text = ta.value.trim();
+        if (!n.text) notes = notes.filter(m => m !== n);
+        saveNotes();
+        renderNotes();
+      };
+      ta.addEventListener('blur', finish);
+      ta.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); ta.blur(); }
+      });
+    }
+    function addNote() {
+      const input = $('note-in');
+      const text = input.value.trim();
+      if (!text) return;
+      notes.unshift({ id: uid(), text, t: new Date().toISOString() });
+      input.value = '';
+      saveNotes();
+      renderNotes();
+    }
+    $('note-add').addEventListener('click', addNote);
+    $('note-in').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); addNote(); }
+    });
+    renderTasks();
+    renderNotes();
+
+    // ---------- Système : processeur, mémoire, batterie ----------
+    let sysTimer = null, sysPrimed = false;
+    const cpuHist = [];
+    const gb = bytes => (bytes / 1073741824).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+    function sysSync() {
+      if (open && view === 'sys') sysStart(); else sysStop();
+    }
+    function sysStart() {
+      if (sysTimer) return;
+      sysPrimed = false;
+      pollSys();
+      setTimeout(pollSys, 600);
+      sysTimer = setInterval(pollSys, 2000);
+    }
+    function sysStop() { clearInterval(sysTimer); sysTimer = null; }
+    async function pollSys() {
+      let s;
+      try { s = await window.pillAPI.sysinfo(); } catch { return; }
+      if (!s) return;
+      const first = !sysPrimed; // le 1er relevé du processeur est une moyenne : on l'ignore
+      sysPrimed = true;
+      if (!first) {
+        cpuHist.push(s.cpu);
+        while (cpuHist.length > 30) cpuHist.shift();
+        $('cpu-v').textContent = s.cpu + ' %';
+        $('cpu-b').style.width = s.cpu + '%';
+        $('cpu-s').setAttribute('points', cpuHist.map((v, i) =>
+          (i * (100 / 29)).toFixed(1) + ',' + (33 - v / 100 * 32).toFixed(1)).join(' '));
+      }
+      const memPct = Math.round(s.mem.used / s.mem.total * 100);
+      $('mem-v').textContent = memPct + ' %';
+      $('mem-b').style.width = memPct + '%';
+      $('mem-b').classList.toggle('low', memPct >= 90);
+      $('mem-s').textContent = gb(s.mem.used) + ' Go utilisés sur ' + gb(s.mem.total) + ' Go';
+      const b = s.battery;
+      if (!b || !b.has) {
+        $('bat-v').textContent = '—';
+        $('bat-b').style.width = '0%';
+        $('bat-s').textContent = 'Pas de batterie sur cet appareil';
+      } else {
+        $('bat-v').textContent = b.pct + ' %';
+        $('bat-b').style.width = b.pct + '%';
+        $('bat-b').classList.toggle('low', b.pct <= 20 && !b.ac);
+        const states = { charging: 'En charge', discharging: 'Sur batterie', charged: 'Chargée', 'finishing charge': 'Charge presque terminée', 'not charging': 'Sur secteur (ne charge pas)' };
+        $('bat-s').textContent = (states[b.state] || (b.ac ? 'Sur secteur' : 'Sur batterie')) + (b.remaining ? ' · ' + b.remaining + ' restantes' : '');
+      }
+    }
+
+    // ---------- Lanceur : apps, fichiers, sites ----------
+    const lres = $('lres');
+    let lseq = 0, litems = [], lsel = 0, ltimer = null;
+    function clearLauncher() {
+      lq.value = '';
+      lseq++;
+      litems = [];
+      renderLaunch();
+    }
+    async function runLaunch() {
+      const q = lq.value.trim();
+      const mine = ++lseq;
+      if (!q) { litems = []; renderLaunch(); return; }
+      let results = [];
+      try { results = await window.pillAPI.launchSearch(q); } catch {}
+      if (mine !== lseq) return; // une recherche plus récente est partie entre-temps
+      const c = calc(q, true);
+      if (c) results = [{ kind: 'calc', name: '= ' + c.display, sub: q + ' · ↵ pour copier', target: c.copy }].concat(results || []);
+      litems = results || [];
+      lsel = 0;
+      renderLaunch();
+    }
+    function renderLaunch() {
+      lres.innerHTML = '';
+      if (!litems.length) {
+        lres.appendChild(emptyMsg(lq.value.trim() ? 'Aucun résultat' : 'Tape un nom d\u2019app, une adresse ou un calcul'));
+        return;
+      }
+      litems.forEach((item, i) => {
+        const row = el('div', 'lrow' + (i === lsel ? ' sel' : ''));
+        if (item.icon) {
+          const img = new Image();
+          img.onerror = () => img.replaceWith(el('div', 'gl', item.kind === 'app' ? '▢' : '▤'));
+          img.src = item.icon;
+          row.appendChild(img);
+        } else {
+          row.appendChild(el('div', 'gl', { calc: '=', web: '⌕', url: '↗', app: '▢', file: '▤' }[item.kind] || '↗'));
+        }
+        const tx = el('div', 'tx');
+        tx.appendChild(el('div', 'nm', item.name));
+        if (item.sub) tx.appendChild(el('div', 'sb', item.sub));
+        row.appendChild(tx);
+        row.addEventListener('mouseenter', () => {
+          lsel = i;
+          [...lres.children].forEach((r, j) => r.classList.toggle('sel', j === i));
+        });
+        row.addEventListener('click', () => openLaunch(item, false));
+        lres.appendChild(row);
+      });
+    }
+    function openLaunch(item, reveal) {
+      if (!item) return;
+      if (item.kind === 'calc') {
+        navigator.clipboard.writeText(item.target).catch(() => {});
+        const nm = lres.querySelector('.lrow.sel .nm');
+        if (nm) { const old = nm.textContent; nm.textContent = 'Copié'; setTimeout(() => { nm.textContent = old; }, 800); }
+        return;
+      }
+      window.pillAPI.launchOpen({ kind: item.kind, target: item.target }, reveal);
+    }
+    lq.addEventListener('input', () => { clearTimeout(ltimer); ltimer = setTimeout(runLaunch, 120); });
+    lq.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!litems.length) return;
+        lsel = (lsel + (e.key === 'ArrowDown' ? 1 : -1) + litems.length) % litems.length;
+        [...lres.children].forEach((r, j) => r.classList.toggle('sel', j === lsel));
+        if (lres.children[lsel]) lres.children[lsel].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        openLaunch(litems[lsel], e.metaKey);
+      }
+    });
+    renderLaunch();
+
+    // ---------- Calculatrice ----------
+    const cExpr = $('c-expr'), cRes = $('c-res'), cKeys = $('c-keys');
+    let cx = '', cDone = false;
+    const CKEYS = [
+      ['C', 'c', 'fn'], ['⌫', 'b', 'fn'], ['%', '%', 'fn'], ['÷', '÷', 'op'],
+      ['7'], ['8'], ['9'], ['×', '×', 'op'],
+      ['4'], ['5'], ['6'], ['−', '−', 'op'],
+      ['1'], ['2'], ['3'], ['+', '+', 'op'],
+      ['( )', 'p', 'fn'], ['0'], [','], ['=', '=', 'eq']
+    ];
+    function cPress(k) {
+      const last = cx.slice(-1);
+      if (k === 'c') { cx = ''; cDone = false; }
+      else if (k === 'b') { cx = cDone ? '' : cx.slice(0, -1); cDone = false; }
+      else if (k === '=') {
+        const r = calc(cx, true);
+        if (r) { cx = r.copy; cDone = true; }
+      } else if (k === 'p') {
+        if (cDone) { cx = ''; cDone = false; }
+        const o = (cx.match(/\(/g) || []).length, c = (cx.match(/\)/g) || []).length;
+        const after = /[\d)%]$/.test(cx);
+        cx += (o > c && after) ? ')' : after ? '×(' : '(';
+      } else if (/^[\d,]$/.test(k)) {
+        if (cDone) { cx = ''; cDone = false; }
+        if (k === ',') {
+          if (/,\d*$/.test(cx)) return;
+          if (!/\d$/.test(cx)) cx += '0';
+        }
+        cx += k;
+      } else if (k === '%') {
+        cDone = false;
+        if (/[\d)]$/.test(cx)) cx += '%';
+      } else { // + − × ÷
+        cDone = false;
+        if (!cx && k !== '−') return;
+        if (/[+−×÷]$/.test(cx)) cx = cx.slice(0, -1);
+        if (cx || k === '−') cx += k;
+      }
+      cRender();
+    }
+    function cRender() {
+      cExpr.textContent = cx || '0';
+      cExpr.classList.toggle('long', cx.length > 11);
+      const r = !cDone && calc(cx, true);
+      cRes.textContent = r ? '= ' + r.display : '';
+    }
+    CKEYS.forEach(([label, key, cls]) => {
+      const b = el('button', 'key' + (cls ? ' ' + cls : ''), label);
+      b.addEventListener('click', () => cPress(key || label));
+      cKeys.appendChild(b);
+    });
+    cRes.addEventListener('click', () => {
+      const r = calc(cx, true);
+      if (!r) return;
+      navigator.clipboard.writeText(r.copy).catch(() => {});
+      const old = cRes.textContent;
+      cRes.textContent = 'Copié';
+      setTimeout(() => { cRes.textContent = old; }, 800);
+    });
+    window.addEventListener('keydown', e => {
+      if (!open || view !== 'calc' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key, map = { '*': '×', '/': '÷', '-': '−', '.': ',', Enter: '=', '=': '=', Backspace: 'b', c: 'c', C: 'c', p: 'p', '(': 'p', ')': 'p' };
+      const key = /^[\d,+%]$/.test(k) ? k : map[k];
+      if (!key) return;
+      e.preventDefault();
+      cPress(key);
+    });
+    cRender();
+
+    // ---------- Barre d'actions : pause, coller, démarrage auto, vider ----------
+    const pauseBtn = document.getElementById('pause');
+    const pasteBtn = document.getElementById('paste');
+    const loginBtn = document.getElementById('login');
+    const clearBtn = document.getElementById('clear');
+
+    const leftEl = document.getElementById('left');
+
+    function applyState(state) {
+      applyLook(state);
+      pillEl.classList.toggle('paused', state.paused);
+      leftEl.title = state.paused ? 'Historique en pause' : '';
+      pauseBtn.classList.toggle('on', state.paused);
+      pauseBtn.textContent = state.paused ? 'Reprendre' : 'Pause';
+      pasteBtn.classList.toggle('on', state.pasteOnClick);
+      loginBtn.hidden = !state.canLogin;
+      loginBtn.classList.toggle('on', state.openAtLogin);
+    }
+    window.pillAPI.getState().then(applyState);
+    window.pillAPI.onState(applyState);
+
+    pauseBtn.addEventListener('click', () => window.pillAPI.togglePause());
+    pasteBtn.addEventListener('click', () => window.pillAPI.togglePaste());
+    loginBtn.addEventListener('click', () => window.pillAPI.toggleLogin());
+
+    // "Vider" demande une confirmation : un 2e clic dans les 2 secondes
+    let clearTimer = null;
+    clearBtn.addEventListener('click', () => {
+      if (clearTimer) {
+        clearTimeout(clearTimer);
+        clearTimer = null;
+        clearBtn.textContent = 'Vider';
+        window.pillAPI.clear();
+        return;
+      }
+      clearBtn.textContent = 'Confirmer ?';
+      clearTimer = setTimeout(() => {
+        clearTimer = null;
+        clearBtn.textContent = 'Vider';
+      }, 2000);
+    });
+  </script>
+</body>
+</html>

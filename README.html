@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pill, une capsule flottante pour macOS</title>
+<style>
+  :root {
+    box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --bg: #f4f3fc; --glow1: rgba(119, 116, 255, 0.28); --glow2: rgba(162, 159, 255, 0.22);
+    --text: rgba(20, 18, 40, 0.95); --muted: rgba(60, 58, 92, 0.64);
+    --fill: rgba(255, 255, 255, 0.55); --fill2: rgba(255, 255, 255, 0.85); --line: rgba(80, 70, 170, 0.14);
+    --g1: rgba(255, 255, 255, 0.78); --g2: rgba(255, 255, 255, 0.46); --hi: #fff; --shadow: rgba(60, 50, 140, 0.28);
+    --track: rgba(80, 70, 170, 0.09); --violet: #6a67f0; --violet2: #8f8cff; --on: #fff; --pearl: #6a67f0;
+    --drop-a: rgba(255, 255, 255, 0.95); --drop-b: rgba(255, 255, 255, 0.7);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #08080c; --glow1: rgba(119, 116, 255, 0.40); --glow2: rgba(162, 159, 255, 0.14);
+      --text: rgba(255, 255, 255, 0.96); --muted: rgba(235, 235, 245, 0.58);
+      --fill: rgba(255, 255, 255, 0.055); --fill2: rgba(255, 255, 255, 0.11); --line: rgba(255, 255, 255, 0.12);
+      --g1: rgba(70, 72, 98, 0.52); --g2: rgba(14, 14, 22, 0.58); --hi: rgba(255, 255, 255, 0.32); --shadow: rgba(0, 0, 0, 0.6);
+      --track: rgba(0, 0, 0, 0.3); --violet: #7774ff; --violet2: #a29fff; --on: #0b0b0e; --pearl: #fff;
+      --drop-a: rgba(255, 255, 255, 0.14); --drop-b: rgba(255, 255, 255, 0.04);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #08080c; --glow1: rgba(119, 116, 255, 0.40); --glow2: rgba(162, 159, 255, 0.14);
+    --text: rgba(255, 255, 255, 0.96); --muted: rgba(235, 235, 245, 0.58);
+    --fill: rgba(255, 255, 255, 0.055); --fill2: rgba(255, 255, 255, 0.11); --line: rgba(255, 255, 255, 0.12);
+    --g1: rgba(70, 72, 98, 0.52); --g2: rgba(14, 14, 22, 0.58); --hi: rgba(255, 255, 255, 0.32); --shadow: rgba(0, 0, 0, 0.6);
+    --track: rgba(0, 0, 0, 0.3); --violet: #7774ff; --violet2: #a29fff; --on: #0b0b0e; --pearl: #fff;
+    --drop-a: rgba(255, 255, 255, 0.14); --drop-b: rgba(255, 255, 255, 0.04);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); scroll-behavior: smooth; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font: 16px/1.6 var(--sans); letter-spacing: 0.012em; -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(60% 45% at 18% 0%, var(--glow1), transparent 70%),
+      radial-gradient(50% 40% at 90% 30%, var(--glow2), transparent 70%),
+      radial-gradient(60% 40% at 40% 100%, var(--glow1), transparent 75%);
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 0 22px 80px; }
+  section { margin-top: 104px; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 300; margin: 0; }
+  h2 { font-size: 30px; line-height: 1.2; letter-spacing: 0.01em; margin-bottom: 14px; }
+  h3 { font-size: 20px; margin-bottom: 8px; }
+  p { margin: 0 0 14px; color: var(--muted); }
+  a { color: inherit; }
+
+  /* Verre */
+  .glass {
+    position: relative; border-radius: 30px;
+    background: linear-gradient(165deg, var(--g1), var(--g2));
+    -webkit-backdrop-filter: blur(28px) saturate(1.7); backdrop-filter: blur(28px) saturate(1.7);
+    box-shadow: inset 0 1px 0 var(--hi), inset 0 -1px 0 rgba(255, 255, 255, 0.05), 0 24px 56px -24px var(--shadow);
+  }
+  .glass::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; padding: 1px;
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.05) 32%, rgba(255, 255, 255, 0.02) 62%, rgba(255, 255, 255, 0.26));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  }
+
+  /* Haut de page */
+  .hero { padding-top: 72px; text-align: center; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font: 300 22px var(--display); letter-spacing: 0.04em; }
+  .eye { transform-box: fill-box; transform-origin: center; animation: blink 6s infinite; }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.12); } }
+  h1 { font-size: clamp(36px, 8vw, 64px); line-height: 1.08; font-weight: 200; letter-spacing: 0.015em; margin: 36px auto 40px; max-width: 14em; }
+  .pillmock { display: inline-flex; align-items: center; gap: 14px; height: 64px; padding: 0 28px 0 22px; border-radius: 999px; }
+  .clock { font: 200 36px var(--display); letter-spacing: 0.03em; font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+  .lead { max-width: 33em; margin: 40px auto 28px; font-size: 18px; }
+  .cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 12px 26px; border-radius: 999px; text-decoration: none; font: 500 14px var(--sans);
+    background: var(--fill2); color: var(--text); box-shadow: inset 0 1px 0 var(--hi), inset 0 0 0 1px var(--line);
+    transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s;
+  }
+  .btn:hover { transform: scale(1.04); }
+  .btn:active { transform: scale(1.04, 0.94); transition-duration: 0.12s; }
+  .btn.primary { background: var(--pearl); color: var(--on); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 6px 22px -6px var(--violet); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--violet2); outline-offset: 3px; }
+
+  /* Onglets avec la goutte */
+  .showcase { padding: 22px; }
+  .tabs {
+    position: relative; display: flex; gap: 2px; padding: 6px; border-radius: 999px; overflow-x: auto; scrollbar-width: none;
+    background: var(--track); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.08), inset 0 0 0 1px var(--line);
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button {
+    position: relative; z-index: 1; flex: 1 0 auto; padding: 8px 16px; border: none; border-radius: 999px; background: none; cursor: pointer;
+    color: var(--muted); font: 500 13px var(--sans); letter-spacing: 0.012em;
+    transition: color 0.3s, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .tabs button:hover { color: var(--text); }
+  .tabs button.on { color: var(--text); transform: scale(1.09); }
+  .drop {
+    position: absolute; top: 3px; bottom: 3px; left: 0; width: 0; z-index: 0; pointer-events: none; border-radius: 999px;
+    transition: transform 1s cubic-bezier(0.3, 1.18, 0.4, 1), width 1s cubic-bezier(0.3, 1.18, 0.4, 1);
+  }
+  .drop i {
+    position: absolute; inset: 0; border-radius: inherit;
+    background: radial-gradient(130% 110% at 30% 0%, var(--drop-a), var(--drop-b) 60%), radial-gradient(80% 90% at 75% 115%, var(--drop-a), transparent 70%);
+    -webkit-backdrop-filter: blur(1.5px) saturate(1.7) brightness(1.18); backdrop-filter: blur(1.5px) saturate(1.7) brightness(1.18);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), inset 2px 3px 7px -3px rgba(255, 255, 255, 0.55), inset -2px -4px 9px -4px rgba(255, 255, 255, 0.3), 0 9px 20px -6px var(--shadow), 0 2px 5px rgba(0, 0, 0, 0.14);
+  }
+  .drop.go i { animation: squish 1s cubic-bezier(0.3, 1.1, 0.4, 1); }
+  @keyframes squish { 0% { transform: scale(1); } 30% { transform: scale(1.1, 0.93); } 62% { transform: scale(0.98, 1.04); } 100% { transform: scale(1); } }
+  .panel { padding: 30px 12px 10px; }
+  .panel:not([hidden]) { animation: swap 0.8s var(--ease); }
+  @keyframes swap { from { opacity: 0; transform: translateX(var(--dx, 20px)) scale(0.98); } to { opacity: 1; transform: none; } }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip { padding: 5px 14px; border-radius: 999px; background: var(--fill); box-shadow: inset 0 1px 0 var(--hi), inset 0 0 0 1px var(--line); font: 500 12px var(--sans); }
+
+  /* Raccourcis */
+  .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+  .key { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 22px; background: var(--fill); box-shadow: inset 0 1px 0 var(--hi), inset 0 0 0 1px var(--line); }
+  kbd { flex: none; min-width: 34px; padding: 4px 10px; border-radius: 10px; text-align: center; background: var(--fill2); box-shadow: inset 0 1px 0 var(--hi), 0 1px 3px rgba(0, 0, 0, 0.2); font: 500 13px var(--sans); }
+  .key span { font-size: 14px; color: var(--muted); line-height: 1.4; }
+
+  /* Confidentialité et installation */
+  .note { padding: 30px 32px; }
+  .note p:last-child { margin-bottom: 0; }
+  pre { margin: 12px 0 18px; padding: 16px 20px; border-radius: 20px; overflow-x: auto; background: var(--track); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 1px var(--line); }
+  code { font: 13px/1.7 var(--mono); letter-spacing: 0; color: var(--text); }
+  :not(pre) > code { padding: 2px 7px; border-radius: 8px; background: var(--fill2); font-size: 12.5px; }
+  .step { margin-top: 28px; }
+  .step h3 { margin-bottom: 4px; }
+  footer { margin-top: 96px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 560px) {
+    .keys { grid-template-columns: 1fr; }
+    .note { padding: 24px 22px; }
+    section { margin-top: 80px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .eye, .drop.go i, .panel:not([hidden]) { animation: none; }
+    .drop { transition: none; }
+    .tabs button.on, .btn:hover { transform: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <header class="hero">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2c2c35"/><stop offset="1" stop-color="#111116"/></linearGradient>
+          <linearGradient id="r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a29fff"/><stop offset="0.28" stop-color="#7774ff" stop-opacity="0.75"/><stop offset="0.65" stop-color="#fff" stop-opacity="0.1"/><stop offset="1" stop-color="#fff" stop-opacity="0.14"/></linearGradient>
+          <clipPath id="c"><rect x="1" y="5.5" width="22" height="13" rx="6.5"/></clipPath>
+          <filter id="f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.2"/></filter>
+        </defs>
+        <g transform="rotate(-16 12 12)">
+          <rect x="1" y="5.5" width="22" height="13" rx="6.5" fill="url(#b)"/>
+          <circle cx="2" cy="12" r="6" fill="#7774ff" opacity="0.6" filter="url(#f)" clip-path="url(#c)"/>
+          <rect x="1" y="5.5" width="22" height="13" rx="6.5" fill="none" stroke="url(#r)"/>
+          <rect class="eye" x="14.3" y="9.3" width="2.1" height="5.4" rx="1.05" fill="#fff"/>
+          <rect class="eye" x="18.1" y="9.3" width="2.1" height="5.4" rx="1.05" fill="#fff"/>
+        </g>
+      </svg>
+      Pill
+    </div>
+    <h1>Une capsule flottante pour macOS</h1>
+    <div class="pillmock glass" aria-label="Aperçu de la capsule">
+      <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(-16 12 12)"><rect x="1" y="5.5" width="22" height="13" rx="6.5" fill="#15151b"/><rect x="1" y="5.5" width="22" height="13" rx="6.5" fill="none" stroke="#8d8aff" stroke-opacity="0.7"/><rect class="eye" x="14.3" y="9.3" width="2.1" height="5.4" rx="1.05" fill="#fff"/><rect class="eye" x="18.1" y="9.3" width="2.1" height="5.4" rx="1.05" fill="#fff"/></g></svg>
+      <span class="clock" id="clock">00:00:00</span>
+    </div>
+    <p class="lead">L'heure, l'historique de ton presse-papiers, des minuteurs, des notes et un lanceur, toujours à portée de clic. Glisse la capsule où tu veux, clique pour l'ouvrir.</p>
+    <div class="cta">
+      <a class="btn primary" href="#installer">Installer Pill</a>
+      <a class="btn" href="#onglets">Voir les onglets</a>
+    </div>
+  </header>
+
+  <section id="onglets">
+    <h2>Six onglets, une capsule</h2>
+    <p>Ouvre la capsule et choisis. La goutte te montre où tu es.</p>
+    <div class="showcase glass">
+      <div class="tabs" id="tabs" role="tablist">
+        <button class="on" role="tab" data-k="0">Copies</button>
+        <button role="tab" data-k="1">Temps</button>
+        <button role="tab" data-k="2">Notes</button>
+        <button role="tab" data-k="3">Système</button>
+        <button role="tab" data-k="4">Lancer</button>
+        <button role="tab" data-k="5">Calcul</button>
+      </div>
+      <div class="panel" role="tabpanel">
+        <h3>Copies</h3>
+        <p>L'historique de ton presse-papiers, avec recherche et éléments épinglés qui ne disparaissent jamais. Pill reconnaît ce que tu copies et propose l'action qui va avec : écrire à une adresse, ouvrir un lien, appeler un numéro.</p>
+        <div class="chips"><span class="chip">Adresse e-mail</span><span class="chip">Lien</span><span class="chip">Téléphone</span><span class="chip">Couleur</span><span class="chip">Calcul</span><span class="chip">Code</span></div>
+      </div>
+      <div class="panel" role="tabpanel" hidden>
+        <h3>Temps</h3>
+        <p>Un minuteur, un chronomètre avec tours et un Pomodoro (quatre sessions de focus, des pauses courtes, puis une longue). Quand un minuteur tourne, il remplace l'horloge dans la capsule fermée. À la fin, Pill envoie une notification, joue un son et fait clignoter la capsule.</p>
+      </div>
+      <div class="panel" role="tabpanel" hidden>
+        <h3>Notes</h3>
+        <p>Des tâches avec une échéance facultative, et des notes rapides que tu modifies d'un clic. <kbd>⌘↵</kbd> ajoute la note.</p>
+      </div>
+      <div class="panel" role="tabpanel" hidden>
+        <h3>Système</h3>
+        <p>Processeur, mémoire et batterie, mis à jour toutes les deux secondes tant que l'onglet est ouvert.</p>
+      </div>
+      <div class="panel" role="tabpanel" hidden>
+        <h3>Lancer</h3>
+        <p>Tape le nom d'une app ou d'un fichier, ou une adresse web. <kbd>↵</kbd> ouvre, <kbd>⌘↵</kbd> l'affiche dans le Finder. Un calcul tapé ici est résolu sur place, et <kbd>↵</kbd> copie le résultat.</p>
+      </div>
+      <div class="panel" role="tabpanel" hidden>
+        <h3>Calcul</h3>
+        <p>Une calculatrice qui se pilote à l'écran ou au clavier, avec pourcentages et parenthèses. Touche le résultat pour le copier.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Au bout des doigts</h2>
+    <p>Pill se commande presque sans y penser.</p>
+    <div class="keys">
+      <div class="key"><kbd>⌃⌥V</kbd><span>Ouvrir ou fermer l'historique, depuis n'importe quelle app</span></div>
+      <div class="key"><kbd>⌃⌥Espace</kbd><span>Ouvrir le lanceur</span></div>
+      <div class="key"><kbd>Clic</kbd><span>Ouvrir ou refermer la capsule</span></div>
+      <div class="key"><kbd>2 clics</kbd><span>Aimanter la capsule au bord d'écran le plus proche</span></div>
+      <div class="key"><kbd>↑ ↓</kbd><span>Choisir un élément, <kbd>↵</kbd> pour l'utiliser</span></div>
+      <div class="key"><kbd>Échap</kbd><span>Effacer la recherche, puis fermer</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ce que tu copies reste à toi</h2>
+    <div class="note glass">
+      <p>L'historique, les images, les notes, les tâches et les réglages des minuteurs sont chiffrés avec le trousseau de ton Mac avant d'être écrits sur le disque. Les copies que ton gestionnaire de mots de passe marque comme confidentielles sont ignorées.</p>
+      <p>Pour le reste, <strong>Pause</strong> arrête l'enregistrement et <strong>Vider</strong> efface tout sauf les éléments épinglés.</p>
+    </div>
+  </section>
+
+  <section id="installer">
+    <h2>Installer</h2>
+    <div class="step">
+      <h3>L'essayer</h3>
+      <pre><code>npm install
+npm start</code></pre>
+    </div>
+    <div class="step">
+      <h3>Créer l'app</h3>
+      <pre><code>npm run dist</code></pre>
+      <p>Le fichier <code>.dmg</code> arrive dans le dossier <code>dist/</code>. L'app n'est pas signée : au premier lancement, fais clic droit sur Pill, puis Ouvrir. Si macOS annonce une app endommagée, lance <code>xattr -cr /Applications/Pill.app</code> dans le Terminal.</p>
+    </div>
+    <div class="step">
+      <h3>Coller directement</h3>
+      <p>Pour envoyer <kbd>⌘V</kbd> à l'app active, macOS demande une fois l'autorisation Accessibilité. Sans elle, l'élément est simplement copié.</p>
+    </div>
+    <div class="step">
+      <h3>Verre natif, sur macOS 26 et plus</h3>
+      <p>Pour un vrai flou du bureau derrière la capsule :</p>
+      <pre><code>npm install electron-liquid-glass --save-optional</code></pre>
+      <p>Sans ce module, Pill garde son verre dessiné.</p>
+    </div>
+  </section>
+
+  <footer>Pill 0.5.0, sous licence MIT.</footer>
+</main>
+
+<script>
+  // Horloge
+  var clockEl = document.getElementById('clock');
+  function tick() {
+    var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
+    clockEl.textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  tick(); setInterval(tick, 1000);
+
+  // Onglets et goutte
+  (function () {
+    var tabs = document.getElementById('tabs');
+    var btns = [].slice.call(tabs.querySelectorAll('button'));
+    var panels = [].slice.call(document.querySelectorAll('.showcase .panel'));
+    var drop = document.createElement('div');
+    drop.className = 'drop';
+    drop.innerHTML = '<i></i>';
+    tabs.prepend(drop);
+    var current = 0;
+
+    function place(instant) {
+      var b = btns[current];
+      if (instant) drop.style.transition = 'none';
+      drop.style.width = (b.offsetWidth + 12) + 'px';
+      drop.style.transform = 'translateX(' + (b.offsetLeft - 6) + 'px)';
+      if (instant) { void drop.offsetWidth; drop.style.transition = ''; }
+    }
+    function select(k) {
+      if (k === current) return;
+      var dir = k > current ? 1 : -1;
+      current = k;
+      btns.forEach(function (b, i) { b.classList.toggle('on', i === k); b.setAttribute('aria-selected', i === k); });
+      panels.forEach(function (p, i) {
+        p.hidden = i !== k;
+        if (i === k) p.style.setProperty('--dx', dir * 22 + 'px');
+      });
+      place(false);
+      drop.classList.remove('go'); void drop.offsetWidth; drop.classList.add('go');
+      btns[k].scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    }
+    btns.forEach(function (b, i) { b.addEventListener('click', function () { select(i); }); });
+    new ResizeObserver(function () { place(true); }).observe(tabs);
+    place(true);
+  })();
+</script>
+</body>
+</html>
