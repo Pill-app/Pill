@@ -23,5 +23,14 @@ contextBridge.exposeInMainWorld('pillAPI', {
   launchSearch: q => ipcRenderer.invoke('launch-search', q),
   launchOpen: (item, reveal) => ipcRenderer.send('launch-open', item, !!reveal),
   openExternal: url => ipcRenderer.send('open-external', url),
+  aiHasKey: () => ipcRenderer.invoke('ai-has-key'),
+  aiGetConfig: () => ipcRenderer.invoke('ai-get-config'),
+  aiSetConfig: cfg => ipcRenderer.invoke('ai-set-config', cfg),
+  aiSetKey: key => ipcRenderer.invoke('ai-set-key', key),
+  aiClip: () => ipcRenderer.invoke('ai-clip'),
+  aiUse: (text, paste) => ipcRenderer.send('ai-use', text, !!paste),
+  aiRun: req => ipcRenderer.send('ai-run', req),
+  aiCancel: () => ipcRenderer.send('ai-cancel'),
+  onAi: cb => ipcRenderer.on('ai', (_e, msg) => cb(msg)),
   quit: () => ipcRenderer.send('quit')
 });

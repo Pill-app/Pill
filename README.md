@@ -1,110 +1,62 @@
-<div align="center">
-
-<img src="assets/logo.svg" alt="Pill" width="96" height="96">
-
 # Pill
 
-### Une capsule flottante pour macOS
+Une capsule flottante pour macOS : une horloge animée, l'historique de ton presse-papiers, des minuteurs, des notes, l'état du système et un lanceur, toujours à portée de clic.
 
-<img src="assets/pill.svg" alt="Aperçu de la capsule" width="300">
+## Utilisation
 
-L'heure, l'historique de ton presse-papiers, des minuteurs, des notes et un lanceur, toujours à portée de clic.<br>
-Glisse la capsule où tu veux, clique pour l'ouvrir.
+- **Glisser** la capsule pour la déplacer.
+- **Clic** pour l'ouvrir ou la refermer. **Double-clic** pour l'aimanter au bord d'écran le plus proche.
+- **Raccourci global** `⌃⌥V` (Control + Option + V) pour ouvrir ou fermer l'historique depuis n'importe quelle app. Pour le changer, modifie la constante `SHORTCUT` en haut de `main.js`.
+- **Icône dans la barre de menus** : ouvrir l'historique, masquer la capsule, pause, coller au clic, démarrage auto, vider, quitter.
+- **Recherche** : à l'ouverture, tape directement. `↑` `↓` pour choisir, `Entrée` pour utiliser l'élément, `Échap` pour effacer la recherche puis fermer.
+- **Épingler** (icône au survol d'un élément) : les éléments épinglés restent en haut, ne sont jamais supprimés automatiquement et survivent à « Vider ».
+- **Clic sur un élément** : il est recopié et, si **Coller** est activé, collé directement dans l'app active.
+- **Pause** arrête l'enregistrement (un petit point s'affiche à côté de l'heure). **Vider** efface l'historique, sauf les épinglés. **Démarrage** lance Pill à l'ouverture de session (app installée uniquement).
 
-[**Installer Pill**](#installer) &nbsp;·&nbsp; [Voir les onglets](#six-onglets-une-capsule) &nbsp;·&nbsp; [Raccourcis](#au-bout-des-doigts)
+## Onglets
 
-</div>
+Quand la capsule est ouverte, une rangée d'onglets donne accès à :
 
-<br>
+- **Copies** : l'historique du presse-papiers. Le bouton **Style** (à droite de la recherche) règle le thème, l'opacité et la taille de la capsule.
+- **Temps** : **minuteur**, **chronomètre** (avec tours) et **Pomodoro** (4 sessions de focus, pauses courtes, puis une pause longue ; les durées sont réglables). Quand un minuteur tourne, il remplace l'horloge dans la capsule réduite. À la fin, Pill envoie une notification, joue un son et fait clignoter la capsule.
+- **Notes** : **tâches** (avec échéance facultative) et **notes rapides** (clic sur une note pour la modifier, `⌘↵` pour ajouter).
+- **Système** : processeur, mémoire et batterie, mis à jour toutes les 2 secondes tant que l'onglet est ouvert.
+- **Lancer** : tape le nom d'une app ou d'un fichier, ou une adresse web. `↑` `↓` pour choisir, `Entrée` pour ouvrir, `⌘Entrée` pour l'afficher dans le Finder. Raccourci global `⌃⌥Espace` (constante `LAUNCH_SHORTCUT` en haut de `main.js`).
 
-## Six onglets, une capsule
+Les notes, tâches et réglages de minuteur sont enregistrés en clair dans `~/Library/Application Support/pill`.
 
-Ouvre la capsule et choisis.
+## Coller directement : autorisation macOS
 
-| Onglet | Ce qu'il fait |
-| :-- | :-- |
-| **Copies** | L'historique de ton presse-papiers, avec recherche et éléments épinglés qui ne disparaissent jamais. Pill reconnaît ce que tu copies et propose l'action qui va avec : écrire à une adresse, ouvrir un lien, appeler un numéro. |
-| **Temps** | Un minuteur, un chronomètre avec tours et un Pomodoro (quatre sessions de focus, des pauses courtes, puis une longue). Quand un minuteur tourne, il remplace l'horloge dans la capsule fermée. À la fin : notification, son, et la capsule clignote. |
-| **Notes** | Des tâches avec une échéance facultative, et des notes rapides que tu modifies d'un clic. <kbd>⌘↵</kbd> ajoute la note. |
-| **Système** | Processeur, mémoire et batterie, mis à jour toutes les deux secondes tant que l'onglet est ouvert. |
-| **Lancer** | Tape le nom d'une app ou d'un fichier, ou une adresse web. <kbd>↵</kbd> ouvre, <kbd>⌘↵</kbd> l'affiche dans le Finder. Un calcul tapé ici est résolu sur place, et <kbd>↵</kbd> copie le résultat. |
-| **Calcul** | Une calculatrice qui se pilote à l'écran ou au clavier, avec pourcentages et parenthèses. Touche le résultat pour le copier. |
+Pour envoyer Cmd+V à l'app active, macOS demande l'autorisation **Accessibilité** la première fois (Réglages Système, Confidentialité et sécurité, Accessibilité). Sans elle, l'élément est simplement copié. Tu peux désactiver l'option avec le bouton **Coller** ou dans le menu de la barre de menus.
 
-Dans **Copies**, Pill reconnaît : `Adresse e-mail` `Lien` `Téléphone` `Couleur` `Calcul` `Code`
+## Confidentialité
 
-Le bouton **Style**, à droite de la recherche, règle le thème, l'opacité et la taille de la capsule.
+L'historique (20 éléments non épinglés max) est sauvegardé en clair dans `~/Library/Application Support/pill`. Les copies marquées « confidentielles » par les gestionnaires de mots de passe sont ignorées quand le gestionnaire les signale. Pour les autres cas, utilise **Pause** ou **Vider**.
 
-<br>
+## Lancer en développement
 
-## Au bout des doigts
-
-Pill se commande presque sans y penser.
-
-| Raccourci | Action |
-| :-- | :-- |
-| <kbd>⌃⌥V</kbd> | Ouvrir ou fermer l'historique, depuis n'importe quelle app |
-| <kbd>⌃⌥Espace</kbd> | Ouvrir le lanceur |
-| <kbd>Clic</kbd> | Ouvrir ou refermer la capsule |
-| <kbd>2 clics</kbd> | Aimanter la capsule au bord d'écran le plus proche |
-| <kbd>↑</kbd> <kbd>↓</kbd> | Choisir un élément, <kbd>↵</kbd> pour l'utiliser |
-| <kbd>Échap</kbd> | Effacer la recherche, puis fermer |
-
-Les raccourcis globaux se changent avec les constantes `SHORTCUT` et `LAUNCH_SHORTCUT` en haut de `main.js`.
-
-Autres gestes : **glisser** la capsule pour la déplacer, **épingler** un élément (icône au survol) pour qu'il reste en haut et survive à « Vider », et l'**icône de la barre de menus** pour ouvrir l'historique, masquer la capsule, mettre en pause, activer le collage au clic, le démarrage auto, vider ou quitter.
-
-<br>
-
-## Ce que tu copies reste à toi
-
-L'historique (20 éléments non épinglés max), les notes, les tâches et les réglages des minuteurs sont enregistrés dans `~/Library/Application Support/pill`. Les copies que ton gestionnaire de mots de passe marque comme confidentielles sont ignorées quand il les signale.
-
-Pour le reste, **Pause** arrête l'enregistrement (un petit point s'affiche à côté de l'heure) et **Vider** efface tout sauf les éléments épinglés.
-
-<br>
-
-## Installer
-
-### L'essayer
-
-```bash
+```
 npm install
 npm start
 ```
 
 `PILL_DEBUG=1 npm start` ouvre la console de débogage.
 
-### Créer l'app
+## Créer l'app installable
 
-```bash
+```
+npm install
 npm run dist
 ```
 
-Le fichier `.dmg` arrive dans le dossier `dist/`. L'app n'est pas signée : au premier lancement, fais clic droit sur Pill, puis Ouvrir. Si macOS annonce une app endommagée, lance `xattr -cr /Applications/Pill.app` dans le Terminal.
-
-### Coller directement
-
-Pour envoyer <kbd>⌘V</kbd> à l'app active, macOS demande une fois l'autorisation **Accessibilité** (Réglages Système, Confidentialité et sécurité, Accessibilité). Sans elle, l'élément est simplement copié. Tu peux désactiver l'option avec le bouton **Coller** ou dans le menu de la barre de menus.
-
-<br>
+Le fichier `.dmg` est créé dans le dossier `dist/`. L'app n'est pas signée : au premier lancement, fais clic droit sur Pill, puis Ouvrir. Si macOS affiche « app endommagée », exécute `xattr -cr /Applications/Pill.app` dans le Terminal.
 
 ## Fichiers
 
-| Fichier | Rôle |
-| :-- | :-- |
-| `main.js` | Processus principal : fenêtre, presse-papiers, sauvegarde, barre de menus, raccourcis, lanceur |
-| `preload.js` | Pont sécurisé entre l'interface et le processus principal |
-| `index.html` | Interface : horloge, recherche, historique, onglets, calculatrice |
-| `README.html` | Présentation de l'app sous forme de page web |
-| `assets/` | Icône de la barre de menus, logo et aperçu du README |
-| `build/icon.png` | Icône de l'app |
-| `fonts/BebasNeue-Regular.ttf` | Police Bebas Neue (Ryoichi Tsunekawa, licence SIL OFL), à télécharger sur Google Fonts. Sans elle, Pill utilise la police du système |
-| `PillApp.swift` | Ancien prototype SwiftUI, non utilisé par l'app Electron |
-
-<br>
-
-<div align="center">
-
-Pill 0.5.0, sous licence MIT.
-
-</div>
+- `main.js` : processus principal (fenêtre, presse-papiers, sauvegarde, barre de menus, raccourci)
+- `preload.js` : pont sécurisé entre l'interface et le processus principal
+- `index.html` : interface (horloge, recherche, historique, barre d'actions)
+- `assets/` : icône de la barre de menus
+- `build/icon.png` : icône de l'app
+- `fonts/BebasNeue-Regular.ttf` : police Bebas Neue (Ryoichi Tsunekawa, licence SIL OFL), utilisée pour l'horloge et les boutons. À télécharger sur Google Fonts. Sans ce fichier, Pill utilise la police du système.
+- `PillApp.swift` : ancien prototype SwiftUI, non utilisé par l'app Electron

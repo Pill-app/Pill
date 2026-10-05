@@ -38,8 +38,7 @@
       ],
       "extendInfo": {
         "LSUIElement": true
-      },
-      "artifactName": "Pill.${ext}"
+      }
     }
   }
 }

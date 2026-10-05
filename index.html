@@ -29,7 +29,16 @@
       color-scheme: dark;
     }
     :root[data-theme="minuit"] { --bg1: 46, 60, 96;  --bg2: 7, 11, 24;  --accent: 168, 200, 255; }
-    :root[data-theme="violet"] { --bg1: 74, 60, 108; --bg2: 13, 9, 26;  --accent: 200, 182, 255; }
+    :root[data-theme="violet"] { --bg1: 44, 44, 58; --bg2: 12, 12, 20; --accent: 162, 159, 255; --on-accent: #0b0b0e; }
+    /* Violet : halo violet à gauche et arête lumineuse, comme le logo */
+    :root[data-theme="violet"] #pill::before {
+      background:
+        radial-gradient(55% 95% at 0% 50%, rgba(119, 116, 255, 0.42), transparent 72%),
+        radial-gradient(90% 40% at 30% -8%, rgba(255, 255, 255, 0.14), transparent 70%);
+    }
+    :root[data-theme="violet"] #pill::after {
+      background: linear-gradient(120deg, rgba(162, 159, 255, 0.95), rgba(119, 116, 255, 0.5) 26%, rgba(255, 255, 255, 0.07) 62%, rgba(255, 255, 255, 0.16));
+    }
     :root[data-theme="ambre"]  { --bg1: 96, 74, 46;  --bg2: 21, 14, 7;  --accent: 242, 204, 146; }
     :root[data-theme="foret"]  { --bg1: 46, 72, 62;  --bg2: 7, 15, 12;  --accent: 164, 218, 194; }
     :root[data-theme="clair"] {
@@ -310,6 +319,80 @@
     .lrow .nm, .lrow .sb { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .lrow .nm { font-size: 13px; font-weight: 500; letter-spacing: 0.012em; }
     .lrow .sb { font-size: 11px; color: var(--muted); }
+    /* ----- Assistant IA ----- */
+    #ai-main:not([hidden]), #ai-key:not([hidden]) { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 8px; }
+    #ai-key:not([hidden]) { justify-content: center; }
+    #v-ai svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    #v-ai h3 { margin: 0 0 4px; font: 300 19px var(--display); letter-spacing: 0; }
+    #v-ai p { margin: 0; color: var(--muted); font: 12px/1.45 var(--sans); }
+    .ai-hero { text-align: center; padding: 4px 0 6px; }
+    #ai-provs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 2px; }
+    .ai-orb {
+      position: relative; width: 56px; height: 31px; margin: 0 auto 14px; border-radius: 999px; transform: rotate(-16deg);
+      background: linear-gradient(145deg, rgba(var(--accent), 0.6), rgba(var(--accent), 0.14) 62%, rgba(var(--ink), 0.06));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 1px rgba(var(--ink), 0.14), 0 10px 28px rgba(var(--accent), 0.28);
+    }
+    .ai-orb::before, .ai-orb::after { content: ""; position: absolute; top: 9.5px; width: 4px; height: 12px; border-radius: 2px; background: var(--text); animation: blink 6s infinite; }
+    .ai-orb::before { left: 31px; } .ai-orb::after { left: 40px; }
+    #ai-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; color: var(--muted); font: 500 11.5px var(--sans); }
+    #ai-model-label { display: flex; align-items: center; gap: 7px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    #ai-model-label::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--accent)); box-shadow: 0 0 8px rgba(var(--accent), 0.7); }
+    #ai-cfg { width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--fill); color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.25s, color 0.25s; }
+    #ai-cfg svg { width: 14px; height: 14px; stroke-width: 1.6; }
+    #ai-cfg:hover { background: var(--fill-hover); color: var(--text); }
+    #ai-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+    #ai-body::-webkit-scrollbar { width: 6px; }
+    #ai-body::-webkit-scrollbar-thumb { background: rgba(var(--ink), 0.14); border-radius: 3px; }
+    #ai-empty { margin: auto 0; text-align: center; }
+    #ai-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; text-align: left; }
+    .aiact {
+      display: flex; align-items: center; gap: 9px; padding: 12px 13px; border: none; border-radius: 20px; background: var(--fill); color: var(--text);
+      font: 500 12.5px var(--sans); letter-spacing: 0.012em; cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(var(--ink), 0.04);
+      transition: background 0.25s, transform 0.5s var(--ease);
+    }
+    .aiact svg { stroke: rgb(var(--accent)); }
+    .aiact:hover { background: var(--fill-hover); }
+    .aiact:active { transform: scale(0.96); }
+    #ai-chat { display: flex; flex-direction: column; }
+    #ai-chat[hidden], #ai-empty[hidden] { display: none; }
+    #ai-ask {
+      align-self: flex-end; max-width: 86%; margin-bottom: 8px; padding: 8px 13px; border-radius: 18px 18px 6px 18px;
+      background: rgba(var(--accent), 0.18); box-shadow: inset 0 0 0 1px rgba(var(--accent), 0.24);
+      font: 13px/1.4 var(--sans); user-select: text; animation: rise 0.45s var(--ease) both;
+    }
+    #ai-out {
+      padding: 12px 15px; border-radius: 22px 22px 22px 6px; background: var(--fill); white-space: pre-wrap; user-select: text;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(var(--ink), 0.04);
+      font: 13px/1.55 var(--sans); animation: rise 0.5s var(--ease) 0.06s both;
+    }
+    #ai-out.err { color: var(--muted); }
+    .sk { display: none; height: 9px; margin: 8px 0; border-radius: 5px; background: linear-gradient(90deg, var(--fill) 0%, var(--fill-strong) 50%, var(--fill) 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+    .sk:nth-child(2) { width: 84%; } .sk:nth-child(3) { width: 56%; }
+    #ai-out.wait .sk { display: block; }
+    #ai-out.wait #ai-txt { display: none; }
+    #ai-caret { display: none; width: 2px; height: 1.1em; margin-left: 2px; vertical-align: text-bottom; background: rgb(var(--accent)); animation: caret 1s steps(2, start) infinite; }
+    #ai-out.live #ai-caret { display: inline-block; }
+    #ai-actions:not([hidden]) { display: flex; gap: 8px; }
+    #ai-actions .btn { flex: 1; padding: 8px 0; }
+    #ai-actions .btn[hidden] { display: none; }
+    #ai-clip { display: flex; align-items: center; gap: 9px; min-width: 0; border: none; background: none; padding: 0 4px; color: var(--muted); font: 11.5px var(--sans); text-align: left; cursor: pointer; }
+    #ai-clip i { flex: none; position: relative; width: 28px; height: 16px; border-radius: 999px; background: rgb(var(--accent)); transition: background 0.3s; }
+    #ai-clip i::after { content: ""; position: absolute; top: 2px; left: 14px; width: 12px; height: 12px; border-radius: 50%; background: var(--on-accent); transition: left 0.35s var(--ease), background 0.3s; }
+    #ai-clip.off i { background: var(--fill-strong); }
+    #ai-clip.off i::after { left: 2px; background: var(--muted); }
+    #ai-clip span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    #ai-composer { position: relative; flex: none; }
+    #ai-q { padding-right: 42px; }
+    #ai-send { position: absolute; right: 4px; top: 4px; width: 24px; height: 24px; border: none; border-radius: 50%; background: rgb(var(--accent)); color: var(--on-accent); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.5s var(--ease), opacity 0.2s; }
+    #ai-send svg { width: 14px; height: 14px; stroke-width: 2.2; }
+    #ai-send:active { transform: scale(0.88); }
+    #ai-send:disabled { opacity: 0.3; cursor: default; }
+    #pill.thinking .eye { animation: think 1s ease-in-out infinite; }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    @keyframes caret { 50% { opacity: 0; } }
+    @keyframes think { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-1.6px); } }
+    @media (prefers-reduced-motion: reduce) { .sk, #ai-caret, .ai-orb::before, .ai-orb::after, #pill.thinking .eye, #ai-ask, #ai-out { animation: none; } }
     .lhint { color: var(--muted); font-size: 11px; text-align: center; padding-top: 8px; }
 
     /* Détection du contenu : étiquette discrète + action adaptée */
@@ -322,7 +405,7 @@
     .acts .go { font-size: 11px; }
 
     /* Calculatrice */
-    #tabs button { font-size: 11.5px; }
+    #tabs button { font-size: 10.5px; letter-spacing: 0; min-width: 0; flex: 1 1 auto; padding-left: 5px; padding-right: 5px; }
     #c-screen { flex: 0 0 auto; padding: 6px 8px 14px; text-align: right; min-height: 84px; display: flex; flex-direction: column; justify-content: flex-end; }
     #c-expr { font: 200 44px/1.1 var(--display); letter-spacing: 0.025em; font-feature-settings: "tnum"; word-break: break-all; }
     #c-expr.long { font-size: 28px; }
@@ -461,6 +544,65 @@
     html.glass #pill {
       background: linear-gradient(165deg, rgba(var(--bg1), calc(var(--op) * 0.34)) 0%, rgba(var(--bg2), calc(var(--op) * 0.52)) 100%);
     }
+    /* Anneau de progression (minuteur et Pomodoro) */
+    .ring { position: relative; width: 164px; height: 164px; margin: 4px auto 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ring circle { fill: none; stroke-width: 4; stroke-linecap: round; }
+    .rbg { stroke: rgba(var(--ink), 0.10); }
+    .rfg { stroke: rgb(var(--accent)); stroke-dasharray: 276.46; stroke-dashoffset: 276.46; transition: stroke-dashoffset 0.2s linear; filter: drop-shadow(0 0 4px rgba(var(--accent), 0.45)); }
+    .ring .bigtime { position: relative; font-size: 40px; margin: 0; }
+    .ring .phase { position: relative; margin-top: 6px; }
+    @media (prefers-reduced-motion: reduce) { .rfg { transition: none; } }
+    /* ================= Système de design : fluidité, retenue, cohérence ================= */
+    :root {
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --r-s: 14px; --r-m: 20px;            /* petits contrôles, cartes ; la capsule et les boutons restent en 999px */
+    }
+    html, body { text-rendering: optimizeLegibility; font-optical-sizing: auto; }
+    ::selection { background: rgba(var(--accent), 0.35); }
+
+    /* 1. Fluidité : le contenu apparaît en cascade quand la capsule a fini de s'ouvrir, et disparaît vite à la fermeture */
+    #searchwrap, #list, #bar, #tabs, .view.pane { transition: opacity 0.14s linear; }
+    #pill.open #tabs       { transition: opacity 0.45s var(--ease-out) 0.12s; }
+    #pill.open #searchwrap { transition: opacity 0.45s var(--ease-out) 0.18s; }
+    #pill.open .view.pane, #pill.open #list { transition: opacity 0.45s var(--ease-out) 0.22s; }
+    #pill.open #bar        { transition: opacity 0.45s var(--ease-out) 0.30s; }
+    /* Changement d'onglet : le nouveau contenu se pose en douceur */
+    @keyframes view-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .view.active, .tmode.on, .sp.on { animation: view-in 0.5s var(--ease-out) backwards; }
+    /* Alerte : une respiration lumineuse, plus de bandeau qui clignote */
+    #pill.alarm #top { animation: none; }
+    #pill.alarm { animation: breathe 1.8s ease-in-out infinite alternate; }
+    @keyframes breathe {
+      from { box-shadow: inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 0 rgba(255,255,255,0.05), inset 0 0 28px rgba(255,255,255,0.045); }
+      to   { box-shadow: inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 0 rgba(255,255,255,0.05), inset 0 0 40px rgba(var(--accent), 0.38); }
+    }
+
+    /* 2. Simplicité : le secondaire reste discret et se révèle au survol */
+    #bar button { opacity: 0.5; transition: background 0.3s var(--ease-out), color 0.3s, opacity 0.3s; }
+    #bar:hover button, #bar button.on { opacity: 1; }
+    #gear { opacity: 0.6; transition: background 0.3s var(--ease-out), color 0.3s, opacity 0.3s; }
+    #searchwrap:hover #gear, #pill.styling #gear { opacity: 1; }
+    .cfg, .stat { opacity: 0.4; transition: opacity 0.35s var(--ease-out); }
+    #m-pomo:hover .cfg, #m-pomo:hover .stat, .cfg:focus-within { opacity: 1; }
+
+    /* 3 et 8. Qualité et cohérence : une seule échelle de rayons, une grille de 4 et 8 px */
+    .item, .todo, .note { border-radius: var(--r-m); }
+    .lap, .field, textarea.field { border-radius: var(--r-s); }
+    .item { padding: 12px 16px; margin-bottom: 8px; font-size: 13px; line-height: 1.5; }
+    .todo { padding: 12px 16px; margin-bottom: 8px; }
+    .item img { border-radius: var(--r-s); }
+    .sw i { border-radius: var(--r-m); }
+
+    /* 5. macOS : curseur flèche sur les contrôles, anneau de focus clavier système */
+    button, .item, .chip, .btn, .key, .sw, .todo .ck, .x, #gear { cursor: default; }
+    button:focus { outline: none; }
+    button:focus-visible, .item:focus-visible { outline: 2px solid rgba(var(--accent), 0.65); outline-offset: 2px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .view.active, .tmode.on, .sp.on, #pill.alarm { animation: none; }
+      #pill.open #tabs, #pill.open #searchwrap, #pill.open .view.pane, #pill.open #list, #pill.open #bar { transition-duration: 0.01s; transition-delay: 0s; }
+    }
   </style>
 </head>
 <body>
@@ -503,6 +645,7 @@
       <button data-v="notes">Notes</button>
       <button data-v="sys">Système</button>
       <button data-v="launch">Lancer</button>
+      <button data-v="ai">IA</button>
       <button data-v="calc">Calcul</button>
     </div>
     <div class="view active" id="v-clip" data-view="clip">
@@ -539,7 +682,7 @@
         <button data-m="pomo">Pomodoro</button>
       </div>
       <div class="tmode on" id="m-timer">
-        <div class="bigtime" id="timer-disp">05:00</div>
+        <div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="rbg" cx="50" cy="50" r="44"/><circle class="rfg" id="timer-ring" cx="50" cy="50" r="44"/></svg><div class="bigtime" id="timer-disp">05:00</div></div>
         <div class="chips" id="timer-chips"></div>
         <div class="row"><input class="field num" id="timer-min" type="number" min="1" max="999" value="5"><span class="unit">min</span></div>
         <div class="row"><button class="btn primary" id="timer-go">Démarrer</button><button class="btn" id="timer-reset">Réinit.</button></div>
@@ -550,8 +693,7 @@
         <div id="laps"></div>
       </div>
       <div class="tmode" id="m-pomo">
-        <div class="phase" id="pomo-phase">Focus</div>
-        <div class="bigtime" id="pomo-disp">25:00</div>
+        <div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="rbg" cx="50" cy="50" r="44"/><circle class="rfg" id="pomo-ring" cx="50" cy="50" r="44"/></svg><div class="bigtime" id="pomo-disp">25:00</div><div class="phase" id="pomo-phase">Focus</div></div>
         <div class="dots" id="pomo-dots"></div>
         <div class="row"><button class="btn primary" id="pomo-go">Démarrer</button><button class="btn" id="pomo-skip">Passer</button><button class="btn" id="pomo-reset">Réinit.</button></div>
         <div class="cfg">
@@ -598,6 +740,53 @@
       <input class="field" id="lq" type="text" placeholder="App, fichier, adresse ou calcul" spellcheck="false" autocomplete="off">
       <div id="lres"></div>
       <div class="lhint">↵ ouvrir · ⌘↵ afficher dans le Finder</div>
+    </div>
+    <div class="view pane" id="v-ai" data-view="ai">
+      <div id="ai-key" hidden>
+        <div class="ai-hero">
+          <div class="ai-orb"></div>
+          <h3>Connecte ton IA</h3>
+          <p>Choisis un fournisseur. Ta clé est chiffrée et reste sur ce Mac.</p>
+        </div>
+        <div id="ai-provs"></div>
+        <input class="field" id="ai-model" type="text" placeholder="Modèle" spellcheck="false" autocomplete="off">
+        <input class="field" id="ai-url" type="text" placeholder="https://…/v1/chat/completions" spellcheck="false" autocomplete="off" hidden>
+        <input class="field" id="ai-keyin" type="password" placeholder="Clé API" spellcheck="false" autocomplete="off">
+        <button class="btn primary" id="ai-keysave" style="flex:none">Enregistrer</button>
+      </div>
+      <div id="ai-main" hidden data-state="idle">
+        <div id="ai-head">
+          <span id="ai-model-label"></span>
+          <button id="ai-cfg" title="Fournisseur et clé"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+        </div>
+        <div id="ai-body">
+          <div id="ai-empty">
+            <div class="ai-orb"></div>
+            <h3>Que puis-je faire ?</h3>
+            <p>Je travaille sur ce que tu viens de copier.</p>
+            <div id="ai-quick">
+              <button class="aiact" data-p="Résume ce texte." data-l="Résumer"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h11M4 18h7"/></svg>Résumer</button>
+              <button class="aiact" data-p="Traduis ce texte en anglais (ou en français s'il est déjà en anglais). Renvoie uniquement la traduction." data-l="Traduire"><svg viewBox="0 0 24 24"><path d="M4 5h9M8.5 3v2M6 5c.6 3.2 2.6 5.5 5.5 7M11 5c-.6 3.2-2.8 5.7-6 7.5M13 20l4-9 4 9M14.5 17h5"/></svg>Traduire</button>
+              <button class="aiact" data-p="Corrige l'orthographe et la grammaire sans changer le style. Renvoie uniquement le texte corrigé." data-l="Corriger"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Corriger</button>
+              <button class="aiact" data-p="Explique simplement ce texte." data-l="Expliquer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17v.01"/></svg>Expliquer</button>
+            </div>
+          </div>
+          <div id="ai-chat" hidden>
+            <div id="ai-ask"></div>
+            <div id="ai-out"><i class="sk"></i><i class="sk"></i><i class="sk"></i><span id="ai-txt"></span><i id="ai-caret"></i></div>
+          </div>
+        </div>
+        <div id="ai-actions" hidden>
+          <button class="btn" id="ai-stop" hidden>Arrêter</button>
+          <button class="btn" id="ai-copy" hidden>Copier</button>
+          <button class="btn primary" id="ai-paste" hidden>Coller dans l'app</button>
+        </div>
+        <button id="ai-clip" title="Inclure ou non le presse-papiers dans la demande"><i></i><span></span></button>
+        <div id="ai-composer">
+          <input class="field" id="ai-q" type="text" placeholder="Pose ta question…" spellcheck="false" autocomplete="off">
+          <button id="ai-send" title="Envoyer"><svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"/></svg></button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -944,6 +1133,7 @@
         if (e.key === 'Escape') {
           e.preventDefault();
           if (view === 'launch' && lq.value) { lq.value = ''; runLaunch(); }
+          else if (view === 'ai' && aiBusy) aiStop();
           else setPanel(false);
         }
         return;
@@ -985,12 +1175,12 @@
     const THEMES = [
       { id: 'verre',  label: 'Verre',  c: ['#4a4c58', '#0c0c10'] },
       { id: 'minuit', label: 'Minuit', c: ['#2e3c60', '#070b18'] },
-      { id: 'violet', label: 'Violet', c: ['#4a3c6c', '#0d091a'] },
+      { id: 'violet', label: 'Violet', c: ['#2c2c3a', '#0c0c14'] },
       { id: 'ambre',  label: 'Ambre',  c: ['#604a2e', '#150e07'] },
       { id: 'foret',  label: 'Forêt',  c: ['#2e483e', '#070f0c'] },
       { id: 'clair',  label: 'Clair',  c: ['#ffffff', '#d8d8e0'] }
     ];
-    const DEFAULT_STYLE = { theme: 'verre', opacity: 0.7, scale: 1 };
+    const DEFAULT_STYLE = { theme: 'violet', opacity: 0.7, scale: 1 };
     const rootEl = document.documentElement;
     const themesEl = document.getElementById('themes');
     const opEl = document.getElementById('op');
@@ -1080,12 +1270,160 @@
     }
     function emptyMsg(text) { const d = el('div', 'empty', text); d.style.marginTop = '24px'; return d; }
 
+    // ---------- Assistant IA ----------
+    const aiMainEl = $('ai-main'), aiKeyBox = $('ai-key'), aiBody = $('ai-body');
+    const aiEmpty = $('ai-empty'), aiChat = $('ai-chat'), aiAskEl = $('ai-ask'), aiOut = $('ai-out'), aiTxt = $('ai-txt');
+    const aiQ = $('ai-q'), aiSend = $('ai-send'), aiClipEl = $('ai-clip'), aiAct = $('ai-actions');
+    const aiStopB = $('ai-stop'), aiCopyB = $('ai-copy'), aiPasteB = $('ai-paste');
+    const aiProvs = $('ai-provs'), aiModel = $('ai-model'), aiUrl = $('ai-url'), aiKeyIn = $('ai-keyin');
+    let aiCfg = null, aiProvVal = 'anthropic', aiText = '', aiRunId = 0, aiBusy = false, aiUseClip = true, aiClipTxt = '';
+
+    // idle : accueil · wait : en attente · stream : réponse en cours · done : terminé · error
+    function setAiState(s) {
+      aiMainEl.dataset.state = s;
+      aiEmpty.hidden = s !== 'idle';
+      aiChat.hidden = s === 'idle';
+      aiOut.classList.toggle('wait', s === 'wait');
+      aiOut.classList.toggle('live', s === 'stream');
+      aiOut.classList.toggle('err', s === 'error');
+      const running = s === 'wait' || s === 'stream';
+      aiStopB.hidden = !running;
+      aiCopyB.hidden = aiPasteB.hidden = s !== 'done';
+      aiAct.hidden = !(running || s === 'done');
+      pillEl.classList.toggle('thinking', s === 'wait');
+    }
+    function aiStop() {
+      window.pillAPI.aiCancel();
+      aiBusy = false;
+      setAiState(aiText ? 'done' : 'idle');
+    }
+    aiStopB.addEventListener('click', aiStop);
+
+    function aiSetupFields() {
+      const p = aiCfg.providers.find(x => x.id === aiProvVal);
+      aiUrl.hidden = aiProvVal !== 'custom';
+      aiKeyIn.hidden = !p.needsKey && aiProvVal !== 'custom';
+      aiKeyIn.placeholder = p.hasKey ? 'Clé enregistrée (laisse vide pour la garder)' : (p.needsKey ? 'Clé API' : 'Clé API (facultative)');
+    }
+    function renderProvs() {
+      aiProvs.innerHTML = '';
+      aiCfg.providers.forEach(p => {
+        const b = document.createElement('button');
+        b.className = 'chip' + (p.id === aiProvVal ? ' on' : '');
+        b.dataset.id = p.id;
+        b.textContent = p.label.replace(/ \(.*\)/, '');
+        aiProvs.appendChild(b);
+      });
+    }
+    aiProvs.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      aiProvVal = b.dataset.id;
+      aiModel.value = aiCfg.providers.find(x => x.id === aiProvVal).model;
+      renderProvs();
+      aiSetupFields();
+    });
+    function aiFillSetup() {
+      aiProvVal = aiCfg.provider;
+      aiModel.value = aiCfg.model;
+      aiUrl.value = aiCfg.baseUrl || '';
+      aiKeyIn.value = '';
+      renderProvs();
+      aiSetupFields();
+    }
+    async function aiSync(force) {
+      aiCfg = await window.pillAPI.aiGetConfig();
+      const setup = force === true || !aiCfg.ready;
+      aiKeyBox.hidden = !setup;
+      aiMainEl.hidden = setup;
+      if (setup) { aiFillSetup(); setTimeout(() => (aiKeyIn.hidden ? aiModel : aiKeyIn).focus(), 120); return; }
+      const prov = aiCfg.providers.find(x => x.id === aiCfg.provider);
+      $('ai-model-label').textContent = prov.label.replace(/ \(.*\)/, '') + ' · ' + aiCfg.model;
+      aiClipTxt = (await window.pillAPI.aiClip()).trim();
+      renderAiClip();
+    }
+    $('ai-cfg').addEventListener('click', () => aiSync(true));
+
+    function renderAiClip() {
+      aiClipEl.classList.toggle('off', !aiUseClip || !aiClipTxt);
+      aiClipEl.querySelector('span').textContent = aiClipTxt
+        ? (aiUseClip ? 'Avec : ' : 'Sans : ') + aiClipTxt.replace(/\s+/g, ' ').slice(0, 60)
+        : 'Presse-papiers vide';
+    }
+    aiClipEl.addEventListener('click', () => { aiUseClip = !aiUseClip; renderAiClip(); });
+
+    function aiAsk(prompt, label) {
+      prompt = prompt.trim();
+      if (!prompt) return;
+      aiText = '';
+      aiTxt.textContent = '';
+      aiAskEl.textContent = label || prompt;
+      aiBusy = true;
+      setAiState('wait');
+      aiBody.scrollTop = 0;
+      window.pillAPI.aiRun({ id: ++aiRunId, prompt, useClip: aiUseClip && !!aiClipTxt });
+    }
+    window.pillAPI.onAi(msg => {
+      if (msg.id !== aiRunId) return;
+      if (msg.type === 'delta') {
+        if (aiMainEl.dataset.state === 'wait') setAiState('stream');
+        aiText += msg.text;
+        aiTxt.textContent = aiText;
+        aiBody.scrollTop = aiBody.scrollHeight;
+      } else if (msg.type === 'error') {
+        aiBusy = false;
+        aiTxt.textContent = msg.error;
+        setAiState('error');
+        if (msg.badKey) window.pillAPI.aiSetKey('').then(() => aiSync());
+      } else if (msg.type === 'done') {
+        aiBusy = false;
+        if (aiText) setAiState('done');
+        else { aiTxt.textContent = 'Réponse vide.'; setAiState('error'); }
+      }
+    });
+
+    document.querySelectorAll('#ai-quick .aiact').forEach(b => b.addEventListener('click', () => {
+      aiUseClip = true; renderAiClip(); aiAsk(b.dataset.p, b.dataset.l);
+    }));
+    function aiSubmit() {
+      const q = aiQ.value;
+      if (!q.trim()) return;
+      aiQ.value = '';
+      aiSend.disabled = true;
+      aiAsk(q);
+    }
+    aiSend.disabled = true;
+    aiQ.addEventListener('input', () => { aiSend.disabled = !aiQ.value.trim(); });
+    aiQ.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      aiSubmit();
+    });
+    aiSend.addEventListener('click', aiSubmit);
+
+    aiCopyB.addEventListener('click', () => {
+      window.pillAPI.aiUse(aiText, false);
+      aiCopyB.textContent = 'Copié ✓';
+      setTimeout(() => { aiCopyB.textContent = 'Copier'; }, 1200);
+    });
+    aiPasteB.addEventListener('click', () => window.pillAPI.aiUse(aiText, true));
+
+    async function saveAiKey() {
+      const ok = await window.pillAPI.aiSetConfig({
+        provider: aiProvVal, model: aiModel.value, baseUrl: aiUrl.value, key: aiKeyIn.value
+      });
+      aiKeyIn.value = '';
+      if (ok) aiSync();
+    }
+    $('ai-keysave').addEventListener('click', saveAiKey);
+    [aiModel, aiUrl, aiKeyIn].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') saveAiKey(); }));
+
     // ---------- Onglets ----------
-    const VIEWS = ['clip', 'time', 'notes', 'sys', 'launch', 'calc'];
+    const VIEWS = ['clip', 'time', 'notes', 'sys', 'launch', 'ai', 'calc'];
     const tabsEl = $('tabs');
     function focusActive() {
       setTimeout(() => {
-        const target = { clip: search, launch: lq }[view];
+        const target = { clip: search, launch: lq, ai: document.getElementById('ai-q') }[view];
         if (target) target.focus();
       }, 120);
     }
@@ -1106,6 +1444,7 @@
         }
       });
       if (open) focusActive();
+      if (v === 'ai') aiSync();
       if (v === 'time') renderTime();
       if (v === 'notes') { renderTasks(); renderNotes(); }
       sysSync();
@@ -1303,6 +1642,7 @@
       if (timeMode === 'timer') {
         const left = timerLeft();
         $('timer-disp').textContent = fmtDown(left);
+        $('timer-ring').style.strokeDashoffset = 276.46 * Math.min(1, left / timer.dur);
         $('timer-go').textContent = timer.running ? 'Pause' : (left > 0 && left < timer.dur ? 'Reprendre' : 'Démarrer');
         document.querySelectorAll('#timer-chips .chip').forEach(c => c.classList.toggle('on', Number(c.dataset.min) === timer.dur / 60000));
       } else if (timeMode === 'chrono') {
@@ -1311,8 +1651,9 @@
         $('chrono-go').textContent = chrono.running ? 'Pause' : (t > 0 ? 'Reprendre' : 'Démarrer');
       } else {
         const left = pomoLeft();
-        $('pomo-phase').textContent = PHASE_LABEL[pomo.phase];
+        $('pomo-phase').textContent = PHASE_LABEL[pomo.phase] + (pomo.phase === 'focus' ? ' ' + pomo.cycle + ' sur 4' : '');
         $('pomo-disp').textContent = fmtDown(left);
+        $('pomo-ring').style.strokeDashoffset = 276.46 * Math.min(1, left / pDur(pomo.phase));
         $('pomo-go').textContent = pomo.running ? 'Pause' : (left < pDur(pomo.phase) ? 'Reprendre' : 'Démarrer');
         const dots = $('pomo-dots');
         if (dots.children.length !== 4) { dots.innerHTML = ''; for (let i = 0; i < 4; i++) dots.appendChild(document.createElement('i')); }

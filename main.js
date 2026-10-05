@@ -1,6 +1,6 @@
 const {
   app, BrowserWindow, clipboard, ClipboardItem, nativeImage, ipcMain, screen,
-  Tray, Menu, globalShortcut, systemPreferences, Notification, shell
+  Tray, Menu, globalShortcut, systemPreferences, Notification, shell, safeStorage
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -13,6 +13,10 @@ const { execFile } = require('child_process');
 const SHORTCUT = 'Control+Alt+V';
 // Raccourci global pour ouvrir le lanceur (apps, fichiers, sites)
 const LAUNCH_SHORTCUT = 'Control+Alt+Space';
+// Raccourci global pour ouvrir l'assistant IA
+const AI_SHORTCUT = 'Control+Alt+A';
+// Modèle utilisé par l'assistant
+const AI_MODEL = 'claude-sonnet-5-5';
 
 const SMALL = { width: 236, height: 54 };
 const BIG = { width: 340, height: 490 };
@@ -24,7 +28,7 @@ let tray;
 let dragStartPos = [0, 0];
 let paused = false;
 let expanded = false;
-const settings = { pasteOnClick: true, theme: 'verre', opacity: 0.76, scale: 1 };
+const settings = { pasteOnClick: true, theme: 'violet', opacity: 0.76, scale: 1, aiProvider: 'anthropic', aiModel: '', aiBaseUrl: '' };
 const THEME_IDS = ['verre', 'minuit', 'violet', 'ambre', 'foret', 'clair'];
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -156,7 +160,7 @@ function getState() {
   return {
     paused,
     pasteOnClick: settings.pasteOnClick,
-    theme: THEME_IDS.includes(settings.theme) ? settings.theme : 'verre',
+    theme: THEME_IDS.includes(settings.theme) ? settings.theme : 'violet',
     opacity: clamp(Number(settings.opacity) || 0.76, 0.25, 1),
     scale: clamp(Number(settings.scale) || 1, 0.8, 1.3),
     canLogin: app.isPackaged, // le démarrage auto n'a de sens que pour l'app installée
@@ -326,6 +330,10 @@ function togglePanel() {
   setPanel(open, open ? 'clip' : undefined);
 }
 
+function toggleAssistant() {
+  const open = !win.isVisible() || !expanded;
+  setPanel(open, open ? 'ai' : undefined);
+}
 function toggleLauncher() {
   const open = !win.isVisible() || !expanded;
   setPanel(open, open ? 'launch' : undefined);
@@ -373,6 +381,12 @@ function buildTrayMenu() {
       accelerator: LAUNCH_SHORTCUT,
       registerAccelerator: false,
       click: toggleLauncher
+    },
+    {
+      label: 'Ouvrir l\u2019assistant',
+      accelerator: AI_SHORTCUT,
+      registerAccelerator: false,
+      click: toggleAssistant
     },
     { label: 'Mettre en pause l\u2019enregistrement', type: 'checkbox', checked: state.paused, click: togglePause },
     { label: 'Coller directement au clic', type: 'checkbox', checked: state.pasteOnClick, click: togglePasteOnClick },
@@ -729,6 +743,187 @@ ipcMain.on('launch-open', (_e, item, reveal) => {
   setPanel(false);
 });
 
+// ---------- Assistant IA ----------
+
+const AI_SYSTEM =
+  "Tu es Pill, un assistant discret qui vit dans une capsule flottante sur le Mac de l'utilisateur. " +
+  "Réponds dans la langue de l'utilisateur, de façon concise et directe, sans préambule ni formules de politesse. " +
+  "N'utilise pas de Markdown (pas de **, pas de titres) : ta réponse est souvent collée telle quelle dans une autre app. " +
+  "Si un extrait du presse-papiers est fourni, c'est le texte sur lequel porte la demande.";
+
+// Fournisseurs : « anthropic » (API Messages) ou « openai » (API Chat Completions, utilisée aussi
+// par Mistral, Ollama, OpenRouter, LM Studio…). Pour en ajouter un, ajoute une ligne ici.
+const AI_PRESETS = {
+  anthropic: { label: 'Anthropic', format: 'anthropic', url: 'https://api.anthropic.com/v1/messages', model: AI_MODEL, needsKey: true },
+  openai:    { label: 'OpenAI', format: 'openai', url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini', needsKey: true },
+  mistral:   { label: 'Mistral', format: 'openai', url: 'https://api.mistral.ai/v1/chat/completions', model: 'mistral-small-latest', needsKey: true },
+  ollama:    { label: 'Ollama (local, sans clé)', format: 'openai', url: 'http://localhost:11434/v1/chat/completions', model: 'llama3.2', needsKey: false },
+  custom:    { label: 'Autre (compatible OpenAI)', format: 'openai', url: '', model: '', needsKey: false }
+};
+
+const aiKeyFile = id => path.join(app.getPath('userData'), id === 'anthropic' ? 'ai-key.bin' : 'ai-key-' + id + '.bin');
+let aiAbort = null;
+
+function readAiKey(id) {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return null;
+    return safeStorage.decryptString(fs.readFileSync(aiKeyFile(id)));
+  } catch {
+    return null;
+  }
+}
+
+function aiConfig() {
+  const id = AI_PRESETS[settings.aiProvider] ? settings.aiProvider : 'anthropic';
+  const p = AI_PRESETS[id];
+  return { id, ...p, url: id === 'custom' ? settings.aiBaseUrl : p.url, model: settings.aiModel || p.model };
+}
+
+function aiStatus() {
+  const c = aiConfig();
+  const providers = Object.entries(AI_PRESETS).map(([id, p]) => ({
+    id, label: p.label, model: p.model, needsKey: p.needsKey, hasKey: !!readAiKey(id)
+  }));
+  const hasKey = !!readAiKey(c.id);
+  const ready = (!c.needsKey || hasKey) && !!c.url && !!c.model;
+  return { provider: c.id, model: c.model, baseUrl: settings.aiBaseUrl, providers, ready };
+}
+
+ipcMain.handle('ai-has-key', () => aiStatus().ready);
+ipcMain.handle('ai-get-config', () => aiStatus());
+
+ipcMain.handle('ai-set-config', (_e, cfg) => {
+  try {
+    if (!cfg || !AI_PRESETS[cfg.provider]) return false;
+    settings.aiProvider = cfg.provider;
+    settings.aiModel = String(cfg.model || '').trim().slice(0, 100);
+    settings.aiBaseUrl = '';
+    if (cfg.provider === 'custom') {
+      const u = new URL(String(cfg.baseUrl || '').trim());
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+      settings.aiBaseUrl = u.href;
+    }
+    saveSettings();
+    const key = String(cfg.key || '').trim().slice(0, 300);
+    if (key) {
+      if (!safeStorage.isEncryptionAvailable()) return false;
+      fs.mkdirSync(app.getPath('userData'), { recursive: true });
+      fs.writeFileSync(aiKeyFile(cfg.provider), safeStorage.encryptString(key), { mode: 0o600 });
+    }
+    return aiStatus().ready;
+  } catch (err) {
+    console.error('Réglages IA non sauvegardés :', err.message);
+    return false;
+  }
+});
+
+// Efface la clé du fournisseur actuel (utilisé quand elle est refusée)
+ipcMain.handle('ai-set-key', (_e, key) => {
+  try {
+    if (!String(key || '').trim()) fs.rmSync(aiKeyFile(aiConfig().id), { force: true });
+  } catch {}
+  return aiStatus().ready;
+});
+
+// Aperçu du texte actuellement dans le presse-papiers (pour la pastille de l'onglet)
+ipcMain.handle('ai-clip', () => clipboard.readText().slice(0, 300));
+
+ipcMain.on('ai-cancel', () => { if (aiAbort) aiAbort.abort(); });
+
+ipcMain.on('ai-run', async (_e, req) => {
+  if (aiAbort) aiAbort.abort();
+  const ctrl = new AbortController();
+  aiAbort = ctrl;
+  const id = req && req.id;
+  const send = msg => { if (win && !win.isDestroyed()) win.webContents.send('ai', { id, ...msg }); };
+
+  const prompt = String((req && req.prompt) || '').trim().slice(0, 8000);
+  if (!prompt) { send({ type: 'error', error: 'Demande vide.' }); return; }
+  const cfg = aiConfig();
+  const key = readAiKey(cfg.id);
+  if ((cfg.needsKey && !key) || !cfg.url || !cfg.model) { send({ type: 'error', error: 'Assistant non configuré.' }); return; }
+
+  let content = prompt;
+  if (req.useClip) {
+    const clip = clipboard.readText().slice(0, 30000);
+    if (clip.trim()) content = '<presse_papiers>\n' + clip + '\n</presse_papiers>\n\n' + prompt;
+  }
+
+  const headers = { 'content-type': 'application/json' };
+  let body;
+  if (cfg.format === 'anthropic') {
+    headers['x-api-key'] = key;
+    headers['anthropic-version'] = '2023-06-01';
+    body = { model: cfg.model, max_tokens: 1500, stream: true, system: AI_SYSTEM, messages: [{ role: 'user', content }] };
+  } else {
+    if (key) headers.authorization = 'Bearer ' + key;
+    body = { model: cfg.model, stream: true, messages: [{ role: 'system', content: AI_SYSTEM }, { role: 'user', content }] };
+  }
+
+  try {
+    const res = await fetch(cfg.url, { method: 'POST', signal: ctrl.signal, headers, body: JSON.stringify(body) });
+    if (!res.ok) {
+      let detail = '';
+      try {
+        const j = await res.json();
+        detail = (j.error && (j.error.message || j.error)) || j.message || '';
+      } catch {}
+      const error = res.status === 401 ? 'Clé API refusée.' : (typeof detail === 'string' && detail) || 'Erreur ' + res.status;
+      send({ type: 'error', error, badKey: res.status === 401 });
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        if (!data || data === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(data);
+          let text = '';
+          if (cfg.format === 'anthropic') {
+            if (evt.type === 'content_block_delta' && evt.delta && evt.delta.type === 'text_delta') text = evt.delta.text;
+          } else {
+            const d = evt.choices && evt.choices[0] && evt.choices[0].delta;
+            if (d && typeof d.content === 'string') text = d.content;
+          }
+          if (text) send({ type: 'delta', text });
+          if (evt.error) {
+            send({ type: 'error', error: (evt.error.message || String(evt.error)) });
+            return;
+          }
+        } catch {}
+      }
+    }
+    send({ type: 'done' });
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      send({ type: 'error', error: cfg.id === 'ollama' ? 'Ollama ne répond pas (est-il lancé ?).' : 'Connexion impossible.' });
+    }
+  } finally {
+    if (aiAbort === ctrl) aiAbort = null;
+  }
+});
+
+// Copie la réponse de l'assistant, et la colle dans l'app active si demandé
+ipcMain.on('ai-use', async (_e, text, paste) => {
+  const t = String(text || '').slice(0, MAX_TEXT);
+  if (!t) return;
+  clipboard.writeText(t);
+  try {
+    const now = await readClipboardEntry();
+    if (now) lastKey = now.key;
+  } catch {}
+  if (paste && settings.pasteOnClick) await pasteIntoFrontApp();
+});
+
 ipcMain.on('quit', () => app.quit());
 
 // Une seule instance de Pill à la fois : si on relance, on rouvre l'historique de la première
@@ -748,6 +943,9 @@ if (!app.requestSingleInstanceLock()) {
     }
     if (!globalShortcut.register(LAUNCH_SHORTCUT, toggleLauncher)) {
       console.error('Raccourci indisponible (déjà utilisé ?) :', LAUNCH_SHORTCUT);
+    }
+    if (!globalShortcut.register(AI_SHORTCUT, toggleAssistant)) {
+      console.error('Raccourci indisponible (déjà utilisé ?) :', AI_SHORTCUT);
     }
     cpuPercent(); // premier relevé, pour que les suivants soient des différences
     setInterval(pollClipboard, 700);
